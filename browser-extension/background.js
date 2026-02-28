@@ -184,11 +184,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 	if (msg.type === 'CHECK_SITE') {
 		chrome.storage.local.get(['focusActive', 'focusEnd', 'blacklist', 'mode'], (data) => {
-			if (!data.focusActive) {
+			// Focus is active if either the extension OR the desktop app started it
+			const extensionFocusActive = data.focusActive && (!data.focusEnd || Date.now() < data.focusEnd);
+			const effectiveFocusActive = extensionFocusActive || (desktopAppState.running && desktopAppState.focusActive);
+
+			if (!effectiveFocusActive) {
 				sendResponse({ blocked: false, focusActive: false });
 				return;
 			}
-			if (data.focusEnd && Date.now() >= data.focusEnd) {
+			if (extensionFocusActive && data.focusEnd && Date.now() >= data.focusEnd) {
 				stopFocus();
 				sendResponse({ blocked: false, focusActive: false });
 				return;
@@ -205,6 +209,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 			}
 			sendResponse({ blocked, focusActive: true, end: data.focusEnd });
 		});
+		return true;
+	}
+
+	if (msg.type === 'GET_DESKTOP_STATE') {
+		sendResponse(desktopAppState);
 		return true;
 	}
 
@@ -337,3 +346,25 @@ function broadcastToTabs(message) {
 		}
 	});
 }
+
+// ─── Desktop App Integration ───
+let desktopAppState = { running: false, focusActive: false };
+const DESKTOP_APP_URL = 'http://localhost:52525';
+
+async function pingDesktopApp() {
+	try {
+		const res = await fetch(`${DESKTOP_APP_URL}/status`, { signal: AbortSignal.timeout(2000) });
+		if (res.ok) {
+			desktopAppState = await res.json();
+		} else {
+			desktopAppState = { running: false, focusActive: false };
+		}
+	} catch {
+		desktopAppState = { running: false, focusActive: false };
+	}
+	broadcastToTabs({ type: 'DESKTOP_APP_STATE', state: desktopAppState });
+}
+
+// Poll every 5 seconds
+setInterval(pingDesktopApp, 5000);
+pingDesktopApp();
