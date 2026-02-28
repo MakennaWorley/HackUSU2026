@@ -7,10 +7,6 @@
 		"useIgnoreFile": true
 	},
 
-	"files": {
-		"includes": ["**/*.{js,jsx,ts,tsx,json,jsonc,html,css,md}", "!**/node_modules", "!**/dist"]
-	},
-
 	"formatter": {
 		"enabled": true,
 		"formatWithErrors": false,
@@ -34,6 +30,16 @@
 			"trailingCommas": "none",
 			"arrowParentheses": "always",
 			"quoteProperties": "asNeeded"
+		}
+	},
+
+	"html": {
+		"formatter": {
+			"enabled": true,
+			"indentStyle": "tab",
+			"indentWidth": 4,
+			"lineEnding": "lf",
+			"lineWidth": 150
 		}
 	},
 
