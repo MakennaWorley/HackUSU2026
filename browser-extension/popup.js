@@ -11,6 +11,13 @@ const btnSave = document.getElementById('btn-save');
 const saveMsg = document.getElementById('save-msg');
 const categoryCheckboxes = document.getElementById('category-checkboxes');
 
+// Custom category elements
+const categoryNameInput = document.getElementById('category-name');
+const categoryDescInput = document.getElementById('category-desc');
+const categorySitesInput = document.getElementById('category-sites');
+const btnAddCategory = document.getElementById('btn-add-category');
+const addCategoryMsg = document.getElementById('add-category-msg');
+
 let timerInterval = null;
 let categories = [];
 
@@ -59,6 +66,15 @@ function populateCategoryCheckboxes(selectedCategories) {
 		label.className = 'category-name';
 		label.textContent = category.name;
 
+		// Add (Custom) badge for custom categories
+		if (category.custom) {
+			const badge = document.createElement('span');
+			badge.className = 'custom-badge';
+			badge.textContent = 'Custom';
+			label.appendChild(document.createTextNode(' '));
+			label.appendChild(badge);
+		}
+
 		const desc = document.createElement('div');
 		desc.className = 'category-description';
 		desc.textContent = category.description;
@@ -73,6 +89,19 @@ function populateCategoryCheckboxes(selectedCategories) {
 		item.appendChild(checkbox);
 		item.appendChild(info);
 		item.appendChild(sites);
+
+		// Add delete button for custom categories
+		if (category.custom) {
+			const deleteBtn = document.createElement('button');
+			deleteBtn.className = 'btn-delete-category';
+			deleteBtn.textContent = '×';
+			deleteBtn.title = 'Delete category';
+			deleteBtn.addEventListener('click', (e) => {
+				e.stopPropagation();
+				deleteCategory(category.id);
+			});
+			item.appendChild(deleteBtn);
+		}
 
 		categoryCheckboxes.appendChild(item);
 
@@ -163,6 +192,69 @@ function saveSettings() {
 }
 
 btnSave.addEventListener('click', saveSettings);
+
+// ─── Add Custom Category ───
+btnAddCategory.addEventListener('click', () => {
+	const name = categoryNameInput.value.trim();
+	const description = categoryDescInput.value.trim();
+	const sitesText = categorySitesInput.value.trim();
+
+	if (!name) {
+		alert('Please enter a category name');
+		return;
+	}
+
+	if (!sitesText) {
+		alert('Please enter at least one site');
+		return;
+	}
+
+	// Generate ID from name
+	const id = name.toLowerCase().replace(/\s+/g, '_');
+
+	// Parse sites
+	const sites = sitesText
+		.split('\n')
+		.map((s) => s.trim().toLowerCase())
+		.filter(Boolean);
+
+	const newCategory = {
+		id,
+		name,
+		description: description || name,
+		sites,
+		custom: true
+	};
+
+	// Send to background to save
+	chrome.runtime.sendMessage({ type: 'ADD_CATEGORY', category: newCategory }, (res) => {
+		if (res && res.ok) {
+			// Clear form
+			categoryNameInput.value = '';
+			categoryDescInput.value = '';
+			categorySitesInput.value = '';
+
+			// Show success message
+			addCategoryMsg.classList.remove('hidden');
+			setTimeout(() => addCategoryMsg.classList.add('hidden'), 1500);
+
+			// Reload categories
+			loadStatus();
+		}
+	});
+});
+
+function deleteCategory(categoryId) {
+	if (!confirm('Are you sure you want to delete this category?')) {
+		return;
+	}
+
+	chrome.runtime.sendMessage({ type: 'DELETE_CATEGORY', categoryId }, (res) => {
+		if (res && res.ok) {
+			loadStatus();
+		}
+	});
+}
 
 // ─── Init ───
 loadStatus();

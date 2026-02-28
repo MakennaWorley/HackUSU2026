@@ -1,8 +1,8 @@
 {
 	"manifest_version": 3,
-	"name": "Griffin Focus Mode",
+	"name": "Get It Done, Griff!",
 	"version": "1.0.0",
-	"description": "A focus mode extension with a griffin guardian that keeps you on task.",
+	"description": "A focus mode extension with Griff the griffin that keeps you on task.",
 	"permissions": ["storage", "tabs", "alarms", "activeTab"],
 	"host_permissions": ["<all_urls>"],
 	"background": {

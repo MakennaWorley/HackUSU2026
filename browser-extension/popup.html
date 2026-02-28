@@ -3,14 +3,14 @@
 	<head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>Good Griffin</title>
+		<title>Get It Done, Griff!</title>
 		<link rel="stylesheet" href="popup.css">
 	</head>
 	<body>
 		<div class="popup-container">
 			<header>
 				<img src="assets/griff.png" alt="Griffin" class="logo">
-				<h1>Good Griffin</h1>
+				<h1>Get It Done, Griff!</h1>
 			</header>
 
 			<!-- Status area -->
@@ -40,6 +40,29 @@
 					<label>Select categories to block:</label>
 					<div id="category-checkboxes" class="category-list"></div>
 				</div>
+			</details>
+
+			<!-- Add Custom Category -->
+			<details id="add-category-panel">
+				<summary>Add Custom Category</summary>
+
+				<div class="setting-row">
+					<label for="category-name">Category Name:</label>
+					<input type="text" id="category-name" placeholder="e.g., Work Distractions">
+				</div>
+
+				<div class="setting-row">
+					<label for="category-desc">Description:</label>
+					<input type="text" id="category-desc" placeholder="e.g., Sites that distract from work">
+				</div>
+
+				<div class="setting-row">
+					<label for="category-sites">Sites (one per line):</label>
+					<textarea id="category-sites" rows="5" spellcheck="false" placeholder="example.com\nreddit.com\ntwitter.com"></textarea>
+				</div>
+
+				<button id="btn-add-category" class="btn btn-secondary">Add Category</button>
+				<span id="add-category-msg" class="hidden">Category Added ✓</span>
 			</details>
 
 			<!-- Manual Site Additions -->

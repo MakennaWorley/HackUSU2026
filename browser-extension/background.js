@@ -70,12 +70,22 @@ const DEFAULT_CATEGORIES = [
 ];
 
 // Helper to build the complete blocklist from categories and custom sites
-function buildBlocklist(selectedCategories, customSites) {
+function buildBlocklist(selectedCategories, customSites, customCategories = []) {
 	const siteSet = new Set();
 
-	// Add sites from selected categories
+	// Add sites from selected default categories
 	for (const categoryId of selectedCategories) {
 		const category = DEFAULT_CATEGORIES.find((c) => c.id === categoryId);
+		if (category) {
+			for (const site of category.sites) {
+				siteSet.add(site);
+			}
+		}
+	}
+
+	// Add sites from selected custom categories
+	for (const categoryId of selectedCategories) {
+		const category = customCategories.find((c) => c.id === categoryId);
 		if (category) {
 			for (const site of category.sites) {
 				siteSet.add(site);
@@ -93,33 +103,38 @@ function buildBlocklist(selectedCategories, customSites) {
 
 // Initialise storage defaults on install
 chrome.runtime.onInstalled.addListener(() => {
-	chrome.storage.local.get(['blacklist', 'customSites', 'selectedCategories', 'focusActive', 'focusEnd', 'focusDuration', 'mode'], (data) => {
-		const defaults = {};
-		// Migrate old blacklist to new system if needed
-		if (!data.customSites && data.blacklist) {
-			defaults.customSites = data.blacklist;
-			defaults.selectedCategories = [];
-		} else if (!data.customSites) {
-			defaults.customSites = [];
-		}
-		if (!data.selectedCategories) defaults.selectedCategories = ['social_media', 'video_streaming'];
-		if (data.focusActive === undefined) defaults.focusActive = false;
-		if (!data.focusEnd) defaults.focusEnd = 0;
-		if (!data.focusDuration) defaults.focusDuration = 25; // minutes
-		if (!data.mode) defaults.mode = 'blacklist'; // "blacklist" or "whitelist"
+	chrome.storage.local.get(
+		['blacklist', 'customSites', 'selectedCategories', 'customCategories', 'focusActive', 'focusEnd', 'focusDuration', 'mode'],
+		(data) => {
+			const defaults = {};
+			// Migrate old blacklist to new system if needed
+			if (!data.customSites && data.blacklist) {
+				defaults.customSites = data.blacklist;
+				defaults.selectedCategories = [];
+			} else if (!data.customSites) {
+				defaults.customSites = [];
+			}
+			if (!data.selectedCategories) defaults.selectedCategories = ['social_media', 'video_streaming'];
+			if (!data.customCategories) defaults.customCategories = [];
+			if (data.focusActive === undefined) defaults.focusActive = false;
+			if (!data.focusEnd) defaults.focusEnd = 0;
+			if (!data.focusDuration) defaults.focusDuration = 25; // minutes
+			if (!data.mode) defaults.mode = 'blacklist'; // "blacklist" or "whitelist"
 
-		// Build the blacklist from categories and custom sites
-		if (defaults.selectedCategories || defaults.customSites) {
-			defaults.blacklist = buildBlocklist(
-				defaults.selectedCategories || data.selectedCategories || [],
-				defaults.customSites || data.customSites || []
-			);
-		} else if (!data.blacklist) {
-			defaults.blacklist = DEFAULT_BLACKLIST;
-		}
+			// Build the blacklist from categories and custom sites
+			if (defaults.selectedCategories || defaults.customSites) {
+				defaults.blacklist = buildBlocklist(
+					defaults.selectedCategories || data.selectedCategories || [],
+					defaults.customSites || data.customSites || [],
+					data.customCategories || []
+				);
+			} else if (!data.blacklist) {
+				defaults.blacklist = DEFAULT_BLACKLIST;
+			}
 
-		if (Object.keys(defaults).length) chrome.storage.local.set(defaults);
-	});
+			if (Object.keys(defaults).length) chrome.storage.local.set(defaults);
+		}
+	);
 });
 
 // ─── Message handling from popup & content scripts ───
@@ -144,21 +159,26 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 	}
 
 	if (msg.type === 'GET_STATUS') {
-		chrome.storage.local.get(['focusActive', 'focusEnd', 'focusDuration', 'blacklist', 'mode', 'customSites', 'selectedCategories'], (data) => {
-			// Auto-expire if time's up
-			if (data.focusActive && data.focusEnd && Date.now() >= data.focusEnd) {
-				stopFocus();
-				sendResponse({ focusActive: false });
-			} else {
-				// Include categories in response
-				sendResponse({
-					...data,
-					categories: DEFAULT_CATEGORIES,
-					customSites: data.customSites || [],
-					selectedCategories: data.selectedCategories || []
-				});
+		chrome.storage.local.get(
+			['focusActive', 'focusEnd', 'focusDuration', 'blacklist', 'mode', 'customSites', 'selectedCategories', 'customCategories'],
+			(data) => {
+				// Auto-expire if time's up
+				if (data.focusActive && data.focusEnd && Date.now() >= data.focusEnd) {
+					stopFocus();
+					sendResponse({ focusActive: false });
+				} else {
+					// Combine default and custom categories
+					const allCategories = [...DEFAULT_CATEGORIES, ...(data.customCategories || [])];
+					// Include categories in response
+					sendResponse({
+						...data,
+						categories: allCategories,
+						customSites: data.customSites || [],
+						selectedCategories: data.selectedCategories || []
+					});
+				}
 			}
-		});
+		);
 		return true;
 	}
 
@@ -204,13 +224,88 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 		if (msg.focusDuration) updates.focusDuration = msg.focusDuration;
 
 		// Rebuild the blacklist from selected categories and custom sites
-		chrome.storage.local.get(['customSites', 'selectedCategories'], (data) => {
+		chrome.storage.local.get(['customSites', 'selectedCategories', 'customCategories'], (data) => {
 			const customSites = updates.customSites !== undefined ? updates.customSites : data.customSites || [];
 			const selectedCategories = updates.selectedCategories !== undefined ? updates.selectedCategories : data.selectedCategories || [];
+			const customCategories = data.customCategories || [];
 
-			updates.blacklist = buildBlocklist(selectedCategories, customSites);
+			updates.blacklist = buildBlocklist(selectedCategories, customSites, customCategories);
 
 			chrome.storage.local.set(updates, () => sendResponse({ ok: true }));
+		});
+
+		return true;
+	}
+
+	if (msg.type === 'ADD_CATEGORY') {
+		if (!msg.category) {
+			sendResponse({ ok: false, error: 'No category provided' });
+			return;
+		}
+
+		chrome.storage.local.get(['customCategories', 'selectedCategories'], (data) => {
+			const customCategories = data.customCategories || [];
+			const selectedCategories = data.selectedCategories || [];
+
+			// Check if category ID already exists
+			const exists = customCategories.some((c) => c.id === msg.category.id) || DEFAULT_CATEGORIES.some((c) => c.id === msg.category.id);
+
+			if (exists) {
+				sendResponse({ ok: false, error: 'Category with this name already exists' });
+				return;
+			}
+
+			// Add the new category
+			customCategories.push(msg.category);
+
+			// Auto-select the new category
+			selectedCategories.push(msg.category.id);
+
+			// Rebuild blacklist
+			chrome.storage.local.get(['customSites'], (data2) => {
+				const blacklist = buildBlocklist(selectedCategories, data2.customSites || [], customCategories);
+
+				chrome.storage.local.set(
+					{
+						customCategories,
+						selectedCategories,
+						blacklist
+					},
+					() => {
+						sendResponse({ ok: true });
+					}
+				);
+			});
+		});
+
+		return true;
+	}
+
+	if (msg.type === 'DELETE_CATEGORY') {
+		if (!msg.categoryId) {
+			sendResponse({ ok: false, error: 'No category ID provided' });
+			return;
+		}
+
+		chrome.storage.local.get(['customCategories', 'selectedCategories'], (data) => {
+			const customCategories = (data.customCategories || []).filter((c) => c.id !== msg.categoryId);
+			const selectedCategories = (data.selectedCategories || []).filter((id) => id !== msg.categoryId);
+
+			// Rebuild blacklist
+			chrome.storage.local.get(['customSites'], (data2) => {
+				const blacklist = buildBlocklist(selectedCategories, data2.customSites || [], customCategories);
+
+				chrome.storage.local.set(
+					{
+						customCategories,
+						selectedCategories,
+						blacklist
+					},
+					() => {
+						sendResponse({ ok: true });
+					}
+				);
+			});
 		});
 
 		return true;
