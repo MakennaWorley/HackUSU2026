@@ -86,8 +86,8 @@
 /* ── Countdown badge ── */
 #griffin-countdown {
 	position: absolute;
-	top: -8px;
-	right: -8px;
+	top: -12px;
+	right: -12px;
 	width: 32px;
 	height: 32px;
 	border-radius: 50%;
