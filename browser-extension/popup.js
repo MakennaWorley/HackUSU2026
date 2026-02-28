@@ -104,9 +104,6 @@ function populateCategoryCheckboxes(selectedCategories) {
 		item.appendChild(deleteBtn);
 
 		categoryCheckboxes.appendChild(item);
-
-		// Auto-save when checkbox changes
-		checkbox.addEventListener('change', saveSettings);
 	}
 }
 

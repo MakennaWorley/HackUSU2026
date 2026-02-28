@@ -39,6 +39,14 @@
 	// ─── Create the floating griffin ───
 	function createGriffin() {
 		if (griffinEl) return;
+		// Ensure body exists before creating griffin
+		if (!document.body) {
+			// Wait for body to be available
+			if (document.readyState === 'loading') {
+				document.addEventListener('DOMContentLoaded', createGriffin, { once: true });
+			}
+			return;
+		}
 
 		griffinEl = document.createElement('div');
 		griffinEl.id = 'griffin-focus-container';
@@ -239,9 +247,14 @@
 	}
 
 	// ─── Check if this page is blocked ───
+	let checkInProgress = false;
 	function checkCurrentSite() {
+		if (checkInProgress) return;
+		checkInProgress = true;
+
 		const hostname = window.location.hostname;
 		chrome.runtime.sendMessage({ type: 'CHECK_SITE', hostname }, (response) => {
+			checkInProgress = false;
 			if (chrome.runtime.lastError) return; // extension context invalidated
 			if (!response) return;
 
@@ -249,13 +262,17 @@
 				if (response.blocked) {
 					// Always enforce blocked sites, even when desktop app is active
 					createGriffin();
-					goAngry();
+					if (!isBlocked) {
+						goAngry();
+					}
 				} else if (desktopAppActive) {
 					// Desktop overlay handles the calm/idle griffin
 					removeGriffin();
 				} else {
 					createGriffin();
-					goCalm();
+					if (isBlocked) {
+						goCalm();
+					}
 				}
 			} else {
 				removeGriffin();
@@ -279,12 +296,23 @@
 	});
 
 	// ─── Initial check ───
-	checkCurrentSite();
+	// Wait for DOM to be ready before checking
+	function init() {
+		checkCurrentSite();
 
-	// Re-check on visibility change (e.g. switching tabs)
-	document.addEventListener('visibilitychange', () => {
-		if (document.visibilityState === 'visible') {
-			checkCurrentSite();
-		}
-	});
+		// Re-check on visibility change (e.g. switching tabs)
+		document.addEventListener('visibilitychange', () => {
+			if (document.visibilityState === 'visible') {
+				checkCurrentSite();
+			}
+		});
+	}
+
+	// Start checking when DOM is ready
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', init);
+	} else {
+		// DOM is already ready
+		init();
+	}
 })();

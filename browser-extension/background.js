@@ -125,7 +125,7 @@ chrome.runtime.onInstalled.addListener(() => {
 			} else if (!data.customSites) {
 				defaults.customSites = [];
 			}
-			if (!data.selectedCategories) defaults.selectedCategories = ['social_media', 'video_streaming'];
+			if (!data.selectedCategories) defaults.selectedCategories = [];
 			if (!data.customCategories) defaults.customCategories = [];
 			if (!data.deletedDefaultCategories) defaults.deletedDefaultCategories = [];
 			if (data.focusActive === undefined) defaults.focusActive = false;
@@ -250,6 +250,31 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 		return true;
 	}
 
+	if (msg.type === 'SAVE_SETTINGS') {
+		// Handle save from popup - data is at root level
+		const customSites = msg.customSites || [];
+		const selectedCategories = msg.selectedCategories || [];
+		const mode = msg.mode;
+		const focusDuration = msg.focusDuration;
+
+		chrome.storage.local.get(['customCategories'], (data) => {
+			const customCategories = data.customCategories || [];
+			const blacklist = buildBlocklist(selectedCategories, customSites, customCategories);
+
+			const updates = {
+				customSites,
+				selectedCategories,
+				blacklist,
+				mode,
+				focusDuration
+			};
+
+			chrome.storage.local.set(updates, () => sendResponse({ ok: true }));
+		});
+
+		return true;
+	}
+
 	if (msg.type === 'UPDATE_SETTINGS') {
 		const updates = msg.updates || {};
 
@@ -351,10 +376,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 	if (msg.type === 'RESET_TO_DEFAULTS') {
 		// Reset everything to defaults
 		const defaults = {
-			customSites: [],
+			customSites: [...DEFAULT_BLACKLIST],
 			customCategories: [],
 			deletedDefaultCategories: [],
-			selectedCategories: ['social_media', 'video_streaming'],
+			selectedCategories: [],
 			mode: 'blacklist',
 			focusDuration: 25
 		};
@@ -384,16 +409,35 @@ function stopFocus() {
 	broadcastToTabs({ type: 'FOCUS_ENDED' });
 }
 
-function broadcastToTabs(message) {
-	chrome.tabs.query({}, (tabs) => {
+async function broadcastToTabs(message) {
+	try {
+		const tabs = await chrome.tabs.query({});
 		for (const tab of tabs) {
-			if (tab.id) {
-				chrome.tabs.sendMessage(tab.id, message).catch(() => {
-					/* tab may not have content script */
-				});
+			if (!tab.id || !tab.url) continue;
+			// Skip chrome:// and other protected URLs
+			if (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('about:')) {
+				continue;
+			}
+			try {
+				// Send message to content script
+				await chrome.tabs.sendMessage(tab.id, message);
+			} catch (err) {
+				// Content script might not be injected yet, try to inject it
+				try {
+					await chrome.scripting.executeScript({
+						target: { tabId: tab.id },
+						files: ['content.js']
+					});
+					// Retry sending message after injection
+					await chrome.tabs.sendMessage(tab.id, message);
+				} catch (injectErr) {
+					// Silently fail for tabs that can't be injected
+				}
 			}
 		}
-	});
+	} catch (err) {
+		console.error('Error broadcasting to tabs:', err);
+	}
 }
 
 // ─── Desktop App Integration ───
@@ -417,3 +461,67 @@ async function pingDesktopApp() {
 // Poll every 5 seconds
 setInterval(pingDesktopApp, 5000);
 pingDesktopApp();
+
+// ─── Tab Activation Listener ───
+// When user switches to a tab, ensure Griff appears if focus is active
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+	try {
+		const tab = await chrome.tabs.get(activeInfo.tabId);
+		if (!tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('about:')) {
+			return;
+		}
+
+		// Check if focus is active
+		const data = await chrome.storage.local.get(['focusActive', 'focusEnd']);
+		if (data.focusActive && (!data.focusEnd || Date.now() < data.focusEnd)) {
+			// Focus is active, notify this tab
+			try {
+				await chrome.tabs.sendMessage(activeInfo.tabId, { type: 'FOCUS_STARTED', end: data.focusEnd });
+			} catch (err) {
+				// Content script not loaded, inject it
+				try {
+					await chrome.scripting.executeScript({
+						target: { tabId: activeInfo.tabId },
+						files: ['content.js']
+					});
+					await chrome.scripting.insertCSS({
+						target: { tabId: activeInfo.tabId },
+						files: ['content.css']
+					});
+					// Wait a moment for script to initialize, then send message
+					setTimeout(async () => {
+						try {
+							await chrome.tabs.sendMessage(activeInfo.tabId, { type: 'FOCUS_STARTED', end: data.focusEnd });
+						} catch (e) {
+							// Still failed, ignore
+						}
+					}, 100);
+				} catch (injectErr) {
+					// Can't inject, ignore
+				}
+			}
+		}
+	} catch (err) {
+		// Tab no longer exists or other error
+	}
+});
+
+// ─── Tab Update Listener ───
+// When a tab finishes loading, check if focus is active
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+	if (changeInfo.status !== 'complete') return;
+	if (!tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('about:')) {
+		return;
+	}
+
+	// Check if focus is active
+	const data = await chrome.storage.local.get(['focusActive', 'focusEnd']);
+	if (data.focusActive && (!data.focusEnd || Date.now() < data.focusEnd)) {
+		// Focus is active, notify this tab
+		try {
+			await chrome.tabs.sendMessage(tabId, { type: 'FOCUS_STARTED', end: data.focusEnd });
+		} catch (err) {
+			// Content script might not be ready yet, it will check on init
+		}
+	}
+});
