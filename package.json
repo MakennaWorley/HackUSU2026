@@ -4,7 +4,7 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
-		"build": "tsc && cp -R src/frontend/*.html dist/frontend/ && cp -R assets dist/",
+		"build": "tsc && npx shx cp -R src/frontend/*.html dist/frontend/ && npx shx cp -R assets dist/",
 		"watch": "tsc --watch",
 		"format": "biome format --write .",
 		"format:check": "biome format .",
