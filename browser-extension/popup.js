@@ -8,7 +8,9 @@ const btnStop = document.getElementById('btn-stop');
 const modeSelect = document.getElementById('mode-select');
 const siteList = document.getElementById('site-list');
 const btnSave = document.getElementById('btn-save');
+const btnReset = document.getElementById('btn-reset');
 const saveMsg = document.getElementById('save-msg');
+const resetMsg = document.getElementById('reset-msg');
 const categoryCheckboxes = document.getElementById('category-checkboxes');
 
 // Custom category elements
@@ -90,18 +92,16 @@ function populateCategoryCheckboxes(selectedCategories) {
 		item.appendChild(info);
 		item.appendChild(sites);
 
-		// Add delete button for custom categories
-		if (category.custom) {
-			const deleteBtn = document.createElement('button');
-			deleteBtn.className = 'btn-delete-category';
-			deleteBtn.textContent = '×';
-			deleteBtn.title = 'Delete category';
-			deleteBtn.addEventListener('click', (e) => {
-				e.stopPropagation();
-				deleteCategory(category.id);
-			});
-			item.appendChild(deleteBtn);
-		}
+		// Add delete button for all categories
+		const deleteBtn = document.createElement('button');
+		deleteBtn.className = 'btn-delete-category';
+		deleteBtn.textContent = '×';
+		deleteBtn.title = 'Delete category';
+		deleteBtn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			deleteCategory(category.id, category.custom);
+		});
+		item.appendChild(deleteBtn);
 
 		categoryCheckboxes.appendChild(item);
 
@@ -193,6 +193,23 @@ function saveSettings() {
 
 btnSave.addEventListener('click', saveSettings);
 
+btnReset.addEventListener('click', () => {
+	if (!confirm('Are you sure you want to reset all categories and sites to defaults? This will delete all custom categories and sites.')) {
+		return;
+	}
+
+	chrome.runtime.sendMessage({ type: 'RESET_TO_DEFAULTS' }, (res) => {
+		if (res && res.ok) {
+			// Show success message
+			resetMsg.classList.remove('hidden');
+			setTimeout(() => resetMsg.classList.add('hidden'), 2000);
+
+			// Reload categories and settings
+			loadStatus();
+		}
+	});
+});
+
 // ─── Add Custom Category ───
 btnAddCategory.addEventListener('click', () => {
 	const name = categoryNameInput.value.trim();
@@ -243,13 +260,11 @@ btnAddCategory.addEventListener('click', () => {
 		}
 	});
 });
-
-function deleteCategory(categoryId) {
+function deleteCategory(categoryId, isCustom) {
 	if (!confirm('Are you sure you want to delete this category?')) {
 		return;
 	}
-
-	chrome.runtime.sendMessage({ type: 'DELETE_CATEGORY', categoryId }, (res) => {
+	chrome.runtime.sendMessage({ type: 'DELETE_CATEGORY', categoryId, isCustom }, (res) => {
 		if (res && res.ok) {
 			loadStatus();
 		}

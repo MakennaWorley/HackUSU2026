@@ -44,9 +44,9 @@
 
 /* ── Speech bubble ── */
 #griffin-speech-bubble {
-	background: #fff;
-	color: #211551;
-	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	background: #FFFFFF;
+	color: #101820;
+	font-family: "Cera", "Lato", "Segoe UI", Tahoma, Geneva, Arial, sans-serif;
 	font-size: 13px;
 	font-weight: 600;
 	padding: 10px 14px;
@@ -55,7 +55,7 @@
 	text-align: center;
 	position: relative;
 	margin-bottom: 8px;
-	box-shadow: 0 2px 10px #101820;
+	box-shadow: 0 2px 10px #000000;
 	animation: griffin-bubble-in 0.3s ease;
 }
 
@@ -91,15 +91,14 @@
 	width: 32px;
 	height: 32px;
 	border-radius: 50%;
-	background: #e74c3c;
+	background: red;
 	color: #FFFFFF;
 	font-size: 16px;
 	font-weight: 800;
-	font-family: 'Segoe UI', monospace;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	box-shadow: 0 2px 8px rgba(231, 76, 60, 0.6);
+	box-shadow: 0 2px 8px darkred;
 	animation: griffin-pulse 1s ease-in-out infinite;
 }
 

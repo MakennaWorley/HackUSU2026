@@ -18,6 +18,7 @@ const DEFAULT_BLACKLIST = [
 	'snapchat.com'
 ];
 
+// Default blocked categories (blacklist) – hostnames that are off-limits during focus
 const DEFAULT_CATEGORIES = [
 	{
 		id: 'social_media',
@@ -104,7 +105,17 @@ function buildBlocklist(selectedCategories, customSites, customCategories = []) 
 // Initialise storage defaults on install
 chrome.runtime.onInstalled.addListener(() => {
 	chrome.storage.local.get(
-		['blacklist', 'customSites', 'selectedCategories', 'customCategories', 'focusActive', 'focusEnd', 'focusDuration', 'mode'],
+		[
+			'blacklist',
+			'customSites',
+			'selectedCategories',
+			'customCategories',
+			'deletedDefaultCategories',
+			'focusActive',
+			'focusEnd',
+			'focusDuration',
+			'mode'
+		],
 		(data) => {
 			const defaults = {};
 			// Migrate old blacklist to new system if needed
@@ -116,6 +127,7 @@ chrome.runtime.onInstalled.addListener(() => {
 			}
 			if (!data.selectedCategories) defaults.selectedCategories = ['social_media', 'video_streaming'];
 			if (!data.customCategories) defaults.customCategories = [];
+			if (!data.deletedDefaultCategories) defaults.deletedDefaultCategories = [];
 			if (data.focusActive === undefined) defaults.focusActive = false;
 			if (!data.focusEnd) defaults.focusEnd = 0;
 			if (!data.focusDuration) defaults.focusDuration = 25; // minutes
@@ -160,15 +172,28 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 	if (msg.type === 'GET_STATUS') {
 		chrome.storage.local.get(
-			['focusActive', 'focusEnd', 'focusDuration', 'blacklist', 'mode', 'customSites', 'selectedCategories', 'customCategories'],
+			[
+				'focusActive',
+				'focusEnd',
+				'focusDuration',
+				'blacklist',
+				'mode',
+				'customSites',
+				'selectedCategories',
+				'customCategories',
+				'deletedDefaultCategories'
+			],
 			(data) => {
 				// Auto-expire if time's up
 				if (data.focusActive && data.focusEnd && Date.now() >= data.focusEnd) {
 					stopFocus();
 					sendResponse({ focusActive: false });
 				} else {
-					// Combine default and custom categories
-					const allCategories = [...DEFAULT_CATEGORIES, ...(data.customCategories || [])];
+					const deletedDefaultCategories = data.deletedDefaultCategories || [];
+					// Filter out deleted default categories
+					const activeDefaultCategories = DEFAULT_CATEGORIES.filter((c) => !deletedDefaultCategories.includes(c.id));
+					// Combine active default and custom categories
+					const allCategories = [...activeDefaultCategories, ...(data.customCategories || [])];
 					// Include categories in response
 					sendResponse({
 						...data,
@@ -287,25 +312,54 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 			return;
 		}
 
-		chrome.storage.local.get(['customCategories', 'selectedCategories'], (data) => {
-			const customCategories = (data.customCategories || []).filter((c) => c.id !== msg.categoryId);
-			const selectedCategories = (data.selectedCategories || []).filter((id) => id !== msg.categoryId);
+		chrome.storage.local.get(['customCategories', 'selectedCategories', 'deletedDefaultCategories'], (data) => {
+			const updates = {};
+
+			if (msg.isCustom) {
+				// Delete custom category
+				updates.customCategories = (data.customCategories || []).filter((c) => c.id !== msg.categoryId);
+			} else {
+				// Mark default category as deleted
+				const deletedDefaultCategories = data.deletedDefaultCategories || [];
+				if (!deletedDefaultCategories.includes(msg.categoryId)) {
+					deletedDefaultCategories.push(msg.categoryId);
+				}
+				updates.deletedDefaultCategories = deletedDefaultCategories;
+				updates.customCategories = data.customCategories || [];
+			}
+
+			// Remove from selected categories
+			updates.selectedCategories = (data.selectedCategories || []).filter((id) => id !== msg.categoryId);
 
 			// Rebuild blacklist
 			chrome.storage.local.get(['customSites'], (data2) => {
-				const blacklist = buildBlocklist(selectedCategories, data2.customSites || [], customCategories);
+				updates.blacklist = buildBlocklist(updates.selectedCategories, data2.customSites || [], updates.customCategories);
 
-				chrome.storage.local.set(
-					{
-						customCategories,
-						selectedCategories,
-						blacklist
-					},
-					() => {
-						sendResponse({ ok: true });
-					}
-				);
+				chrome.storage.local.set(updates, () => {
+					sendResponse({ ok: true });
+				});
 			});
+		});
+
+		return true;
+	}
+
+	if (msg.type === 'RESET_TO_DEFAULTS') {
+		// Reset everything to defaults
+		const defaults = {
+			customSites: [],
+			customCategories: [],
+			deletedDefaultCategories: [],
+			selectedCategories: ['social_media', 'video_streaming'],
+			mode: 'blacklist',
+			focusDuration: 25
+		};
+
+		// Build the default blacklist
+		defaults.blacklist = buildBlocklist(defaults.selectedCategories, defaults.customSites, defaults.customCategories);
+
+		chrome.storage.local.set(defaults, () => {
+			sendResponse({ ok: true });
 		});
 
 		return true;
