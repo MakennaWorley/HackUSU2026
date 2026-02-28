@@ -1,5 +1,5 @@
 {
-	"name": "goodGriff",
+	"name": "good-griff",
 	"version": "1.0.0",
 	"description": "",
 	"main": "index.js",
@@ -24,6 +24,7 @@
 	"homepage": "https://github.com/MakennaWorley/HackUSU2026#readme",
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.4",
+		"@types/chrome": "^0.1.37",
 		"typescript": "^5.9.3"
 	}
 }
