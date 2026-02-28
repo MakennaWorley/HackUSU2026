@@ -6,7 +6,7 @@
 	const GRIFFIN_IMG = chrome.runtime.getURL('assets/griff.png');
 
 	// ─── Warning messages the griffin can say ───
-	const GRIFFIN_MESSAGES = [
+	const ANGRY_MESSAGES = [
 		'Hey there—remember what you meant to focus on.',
 		'A gentle reminder: your task is waiting.',
 		"Let's return to your work—you've got this.",

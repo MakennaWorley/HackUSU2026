@@ -1,17 +1,15 @@
 const ANGRY_MESSAGES = [
-	"Hey! You're supposed to be focusing!",
-	'You suck at time management!',
-	'Get back to work, human!',
-	"This isn't part of the plan!",
-	'Procrastination detected! Deploying claws in 10\u2026',
-	'Do I look happy? GET BACK TO WORK!',
-	"I'm watching you\u2026 close that app!",
-	'SQUAWK! Wrong app! Switch back NOW!',
-	"You have 10 seconds. Don't test me.",
-	'Focus mode is ON. That app is OFF-LIMITS!',
-	'The griffin commands you: GET BACK ON TASK!',
-	'Is that Steam I see?! Back to work!',
-	"Discord can wait. Your deadline can't!"
+		'Hey there—remember what you meant to focus on.',
+		'A gentle reminder: your task is waiting.',
+		"Let's return to your work—you've got this.",
+		"This doesn't seem part of your current plan.",
+		'I believe you intended to stay on task.',
+		'The griffin suggests returning to your objective.',
+		"I'm keeping watch—shall we head back?",
+		'SQUAWK! A small detour—time to refocus.',
+		'Just checking in—ready to continue?',
+		"Focus mode is active—let's honor that commitment.",
+		'The griffin encourages you to continue your quest.'
 ];
 
 const griffinEl = document.getElementById('griffin-container');
