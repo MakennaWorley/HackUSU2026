@@ -1,14 +1,14 @@
 * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
 }
 
 body {
-	font-family: "Cera", "Lato", "Segoe UI", Tahoma, Geneva, Arial, sans-serif;
+	font-family: 'Cera', 'Lato', 'Segoe UI', Tahoma, Geneva, Arial, sans-serif;
 	width: 340px;
 	background: #101820;
-	color: #FFFFFF;
+	color: #ffffff;
 }
 
 .popup-container {
@@ -44,7 +44,7 @@ header .logo-text {
 header h2 {
 	font-size: 12px;
 	font-weight: 700;
-	color: #F1F1DE;
+	color: #f1f1de;
 }
 
 #status-area {
@@ -58,7 +58,7 @@ header h2 {
 #timer-text {
 	font-size: 22px;
 	font-weight: 700;
-	color: #9D581F;
+	color: #9d581f;
 	margin-top: 6px;
 	font-variant-numeric: tabular-nums;
 }
@@ -67,33 +67,33 @@ label {
 	display: block;
 	font-size: 13px;
 	margin-bottom: 4px;
-	color: #F1F1DE;
+	color: #f1f1de;
 }
 
-input[type="number"],
-input[type="text"] {
+input[type='number'],
+input[type='text'] {
 	width: 100%;
 	padding: 8px;
 	border: 1px solid #101820;
 	border-radius: 6px;
 	background: #211551;
-	color: #FFFFFF;
+	color: #ffffff;
 	font-size: 14px;
 	margin-bottom: 10px;
 }
 
-input[type="text"]::placeholder,
+input[type='text']::placeholder,
 textarea::placeholder {
-	color: #F1F1DE;
+	color: #f1f1de;
 }
 
 select {
 	width: 100%;
 	padding: 8px;
-	border: 1px solid #8252C7;
+	border: 1px solid #8252c7;
 	border-radius: 6px;
 	background: #101820;
-	color: #FFFFFF;
+	color: #ffffff;
 	font-size: 13px;
 	margin-bottom: 10px;
 }
@@ -101,10 +101,10 @@ select {
 textarea {
 	width: 100%;
 	padding: 8px;
-	border: 1px solid #8252C7;
+	border: 1px solid #8252c7;
 	border-radius: 6px;
 	background: #101820;
-	color: #FFFFFF;
+	color: #ffffff;
 	font-size: 12px;
 	font-family: monospace;
 	resize: vertical;
@@ -128,16 +128,16 @@ textarea {
 }
 
 .btn-primary {
-	background: #9D581F;
+	background: #9d581f;
 	color: #101820;
 }
 .btn-primary:hover {
-	background: #F1F1DE;
+	background: #f1f1de;
 }
 
 .btn-danger {
 	background: red;
-	color: #FFFFFF;
+	color: #ffffff;
 }
 .btn-danger:hover {
 	background: red;
@@ -145,22 +145,22 @@ textarea {
 
 .btn-secondary {
 	background: #211551;
-	color: #FFFFFF;
+	color: #ffffff;
 	width: auto;
 	margin-top: 8px;
 }
 .btn-secondary:hover {
-	background: #8252C7;
+	background: #8252c7;
 }
 
 .btn-reset {
-	background: #9D581F;
-	color: #FFFFFF;
+	background: #9d581f;
+	color: #ffffff;
 	width: auto;
 	margin-top: 8px;
 }
 .btn-reset:hover {
-	background: #F1F1DE;
+	background: #f1f1de;
 }
 
 .button-group {
@@ -182,7 +182,7 @@ details summary {
 	margin-bottom: 10px;
 }
 details summary:hover {
-	color: #F1F1DE;
+	color: #f1f1de;
 }
 
 .setting-row {
@@ -193,7 +193,7 @@ details summary:hover {
 #reset-msg {
 	margin-left: 10px;
 	font-size: 13px;
-	color: #8252C7;
+	color: #8252c7;
 	display: inline-block;
 }
 
@@ -210,8 +210,8 @@ details summary:hover {
 	padding: 8px;
 	background: #101820;
 	border-radius: 6px;
-	border: 1px solid #8252C7;
-	color: #FFFFFF;
+	border: 1px solid #8252c7;
+	color: #ffffff;
 }
 
 .category-item {
@@ -229,11 +229,11 @@ details summary:hover {
 	background: #101820;
 }
 
-.category-item input[type="checkbox"] {
+.category-item input[type='checkbox'] {
 	cursor: pointer;
 	width: 16px;
 	height: 16px;
-	accent-color: #9D581F;
+	accent-color: #9d581f;
 	flex-shrink: 0;
 	margin-top: 2px;
 }
@@ -249,13 +249,13 @@ details summary:hover {
 .category-name {
 	font-size: 13px;
 	font-weight: 600;
-	color: #9D581F;
+	color: #9d581f;
 	cursor: pointer;
 }
 
 .category-description {
 	font-size: 11px;
-	color: #FFFFFF;
+	color: #ffffff;
 	line-height: 1.3;
 }
 
@@ -267,10 +267,10 @@ details summary:hover {
 	margin-top: 4px;
 	padding: 8px 10px;
 	background: #101820;
-	border: 1px solid #8252C7;
+	border: 1px solid #8252c7;
 	border-radius: 4px;
 	font-size: 11px;
-	color: #FFFFFF;
+	color: #ffffff;
 	font-family: monospace;
 	line-height: 1.4;
 	z-index: 10;
@@ -287,13 +287,13 @@ details summary:hover {
 
 .help-text {
 	font-size: 11px;
-	color: #F1F1DE;
+	color: #f1f1de;
 	margin-top: 6px;
 }
 
 .custom-badge {
 	display: inline-block;
-	background: #9D581F;
+	background: #9d581f;
 	color: #101820;
 	font-size: 9px;
 	font-weight: 700;
@@ -306,7 +306,7 @@ details summary:hover {
 
 .btn-delete-category {
 	background: red;
-	color: #FFFFFF;
+	color: #ffffff;
 	border: none;
 	border-radius: 4px;
 	width: 24px;

@@ -44,9 +44,9 @@
 
 /* ── Speech bubble ── */
 #griffin-speech-bubble {
-	background: #FFFFFF;
+	background: #ffffff;
 	color: #101820;
-	font-family: "Cera", "Lato", "Segoe UI", Tahoma, Geneva, Arial, sans-serif;
+	font-family: 'Cera', 'Lato', 'Segoe UI', Tahoma, Geneva, Arial, sans-serif;
 	font-size: 13px;
 	font-weight: 600;
 	padding: 10px 14px;
@@ -69,7 +69,7 @@
 	height: 0;
 	border-left: 8px solid transparent;
 	border-right: 8px solid transparent;
-	border-top: 8px solid #FFFFFF;
+	border-top: 8px solid #ffffff;
 }
 
 @keyframes griffin-bubble-in {
@@ -92,7 +92,7 @@
 	height: 32px;
 	border-radius: 50%;
 	background: red;
-	color: #FFFFFF;
+	color: #ffffff;
 	font-size: 16px;
 	font-weight: 800;
 	display: flex;
