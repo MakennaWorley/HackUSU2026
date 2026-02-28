@@ -90,18 +90,16 @@ function populateCategoryCheckboxes(selectedCategories) {
 		item.appendChild(info);
 		item.appendChild(sites);
 
-		// Add delete button for custom categories
-		if (category.custom) {
-			const deleteBtn = document.createElement('button');
-			deleteBtn.className = 'btn-delete-category';
-			deleteBtn.textContent = '×';
-			deleteBtn.title = 'Delete category';
-			deleteBtn.addEventListener('click', (e) => {
-				e.stopPropagation();
-				deleteCategory(category.id);
-			});
-			item.appendChild(deleteBtn);
-		}
+		// Add delete button for all categories
+		const deleteBtn = document.createElement('button');
+		deleteBtn.className = 'btn-delete-category';
+		deleteBtn.textContent = '×';
+		deleteBtn.title = 'Delete category';
+		deleteBtn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			deleteCategory(category.id, category.custom);
+		});
+		item.appendChild(deleteBtn);
 
 		categoryCheckboxes.appendChild(item);
 
@@ -243,13 +241,11 @@ btnAddCategory.addEventListener('click', () => {
 		}
 	});
 });
-
-function deleteCategory(categoryId) {
+function deleteCategory(categoryId, isCustom) {
 	if (!confirm('Are you sure you want to delete this category?')) {
 		return;
 	}
-
-	chrome.runtime.sendMessage({ type: 'DELETE_CATEGORY', categoryId }, (res) => {
+	chrome.runtime.sendMessage({ type: 'DELETE_CATEGORY', categoryId, isCustom }, (res) => {
 		if (res && res.ok) {
 			loadStatus();
 		}
