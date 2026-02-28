@@ -1,0 +1,12 @@
+{
+	"name": "get-it-done-griff-desktop",
+	"version": "1.0.0",
+	"description": "Desktop companion for Get It Done, Griff!",
+	"main": "main.js",
+	"scripts": {
+		"start": "electron ."
+	},
+	"devDependencies": {
+		"electron": "^33.0.0"
+	}
+}

@@ -28,6 +28,7 @@
 	let isBlocked = false;
 	let isDragging = false;
 	let wanderInterval = null;
+	let desktopAppActive = false;
 	const dragOffset = { x: 0, y: 0 };
 	let currentX = 0;
 	let currentY = 0;
@@ -245,10 +246,15 @@
 			if (!response) return;
 
 			if (response.focusActive) {
-				createGriffin();
 				if (response.blocked) {
+					// Always enforce blocked sites, even when desktop app is active
+					createGriffin();
 					goAngry();
+				} else if (desktopAppActive) {
+					// Desktop overlay handles the calm/idle griffin
+					removeGriffin();
 				} else {
+					createGriffin();
 					goCalm();
 				}
 			} else {
@@ -264,6 +270,11 @@
 		}
 		if (msg.type === 'FOCUS_ENDED') {
 			removeGriffin();
+		}
+		if (msg.type === 'DESKTOP_APP_STATE') {
+			desktopAppActive = msg.state.running && msg.state.focusActive;
+			// Re-check: keeps angry griffin on blocked sites, removes calm griffin
+			checkCurrentSite();
 		}
 	});
 
