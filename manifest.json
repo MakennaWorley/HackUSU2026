@@ -4,17 +4,16 @@
 	"version": "0.1.0",
 	"manifest_version": 3,
 	"action": {
-		"default_popup": "popup.html",
+		"default_popup": "src/frontend/popup.html",
 		"default_title": "Good Griff"
 	},
 	"background": {
-		"service_worker": "service_worker.js"
+		"service_worker": "dist/backend/service_worker.js",
+		"type": "module"
 	},
 	"permissions": ["tabs", "storage", "alarms"],
 	"host_permissions": ["<all_urls>"],
 	"icons": {
-		"16": "icons/icon16.png",
-		"48": "icons/icon48.png",
-		"128": "icons/icon128.png"
+		"16": "assets/griff.png"
 	}
 }

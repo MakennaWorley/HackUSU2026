@@ -4,6 +4,8 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
+		"build": "tsc && cp -R src/frontend/*.html dist/frontend/",
+		"watch": "tsc --watch",
 		"format": "biome format --write .",
 		"format:check": "biome format .",
 		"lint": "biome lint .",
