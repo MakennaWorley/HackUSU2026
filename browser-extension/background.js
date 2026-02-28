@@ -209,11 +209,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 	if (msg.type === 'CHECK_SITE') {
 		chrome.storage.local.get(['focusActive', 'focusEnd', 'blacklist', 'mode'], (data) => {
-			if (!data.focusActive) {
+			// Focus is active if either the extension OR the desktop app started it
+			const extensionFocusActive = data.focusActive && (!data.focusEnd || Date.now() < data.focusEnd);
+			const effectiveFocusActive = extensionFocusActive || (desktopAppState.running && desktopAppState.focusActive);
+
+			if (!effectiveFocusActive) {
 				sendResponse({ blocked: false, focusActive: false });
 				return;
 			}
-			if (data.focusEnd && Date.now() >= data.focusEnd) {
+			if (extensionFocusActive && data.focusEnd && Date.now() >= data.focusEnd) {
 				stopFocus();
 				sendResponse({ blocked: false, focusActive: false });
 				return;
@@ -231,14 +235,23 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 			sendResponse({ blocked, focusActive: true, end: data.focusEnd });
 		});
 		return true;
-		chrome.storage.local.get(['customSites', 'selectedCategories', 'customCategories'], (data) => {
+	}
+
+	if (msg.type === 'GET_DESKTOP_STATE') {
+		sendResponse(desktopAppState);
+		return true;
+	}
+
 	if (msg.type === 'CLOSE_TAB') {
 		if (sender.tab && sender.tab.id) {
 			chrome.tabs.remove(sender.tab.id);
 		}
 		sendResponse({ ok: true });
 		return true;
-			chrome.storage.local.set(updates, () => sendResponse({ ok: true }));
+	}
+
+	if (msg.type === 'UPDATE_SETTINGS') {
+		const updates = msg.updates || {};
 
 		// Rebuild the blacklist from selected categories and custom sites
 		chrome.storage.local.get(['customSites', 'selectedCategories', 'customCategories'], (data) => {
@@ -250,7 +263,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 			chrome.storage.local.set(updates, () => sendResponse({ ok: true }));
 		});
-		chrome.storage.local.get(['customCategories', 'selectedCategories'], (data) => {
+
+		return true;
 	}
 
 	if (msg.type === 'ADD_CATEGORY') {
@@ -280,6 +294,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 			// Rebuild blacklist
 			chrome.storage.local.get(['customSites'], (data2) => {
 				const blacklist = buildBlocklist(selectedCategories, data2.customSites || [], customCategories);
+				chrome.storage.local.set(
+					{
+						customCategories,
 						selectedCategories,
 						blacklist
 					},
@@ -294,7 +311,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 	}
 
 	if (msg.type === 'DELETE_CATEGORY') {
-		chrome.storage.local.get(['customCategories', 'selectedCategories', 'deletedDefaultCategories'], (data) => {
+		if (!msg.categoryId) {
+			sendResponse({ ok: false, error: 'No category ID provided' });
 			return;
 		}
 
@@ -319,6 +337,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 			// Rebuild blacklist
 			chrome.storage.local.get(['customSites'], (data2) => {
+				const blacklist = buildBlocklist(updates.selectedCategories, data2.customSites || [], updates.customCategories);
+				updates.blacklist = blacklist;
+				chrome.storage.local.set(updates, () => {
+					sendResponse({ ok: true });
 				});
 			});
 		});
@@ -373,3 +395,25 @@ function broadcastToTabs(message) {
 		}
 	});
 }
+
+// ─── Desktop App Integration ───
+let desktopAppState = { running: false, focusActive: false };
+const DESKTOP_APP_URL = 'http://localhost:52525';
+
+async function pingDesktopApp() {
+	try {
+		const res = await fetch(`${DESKTOP_APP_URL}/status`, { signal: AbortSignal.timeout(2000) });
+		if (res.ok) {
+			desktopAppState = await res.json();
+		} else {
+			desktopAppState = { running: false, focusActive: false };
+		}
+	} catch {
+		desktopAppState = { running: false, focusActive: false };
+	}
+	broadcastToTabs({ type: 'DESKTOP_APP_STATE', state: desktopAppState });
+}
+
+// Poll every 5 seconds
+setInterval(pingDesktopApp, 5000);
+pingDesktopApp();
