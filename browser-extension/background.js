@@ -402,6 +402,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 	}
 });
 
+
 // ─── Helpers ───
 function stopFocus() {
 	chrome.storage.local.set({ focusActive: false, focusEnd: 0 });
