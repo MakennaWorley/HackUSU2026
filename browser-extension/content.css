@@ -46,7 +46,7 @@
 #griffin-speech-bubble {
 	background: #fff;
 	color: #1a1a2e;
-	font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 	font-size: 13px;
 	font-weight: 600;
 	padding: 10px 14px;
@@ -60,7 +60,7 @@
 }
 
 #griffin-speech-bubble::after {
-	content: "";
+	content: '';
 	position: absolute;
 	bottom: -8px;
 	left: 50%;
@@ -95,7 +95,7 @@
 	color: #fff;
 	font-size: 16px;
 	font-weight: 800;
-	font-family: "Segoe UI", monospace;
+	font-family: 'Segoe UI', monospace;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -135,8 +135,7 @@
 /* ── Rage mode (last 3 seconds) ── */
 .griffin-rage #griffin-focus-img {
 	animation: griffin-rage-shake 0.15s ease-in-out infinite;
-	filter: hue-rotate(-30deg) saturate(3) brightness(0.75) contrast(1.4)
-		drop-shadow(0 0 8px red);
+	filter: hue-rotate(-30deg) saturate(3) brightness(0.75) contrast(1.4) drop-shadow(0 0 8px red);
 }
 
 @keyframes griffin-rage-shake {

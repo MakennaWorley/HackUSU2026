@@ -3,14 +3,14 @@
 	<head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>Griffin Focus</title>
+		<title>Good Griffin</title>
 		<link rel="stylesheet" href="popup.css">
 	</head>
 	<body>
 		<div class="popup-container">
 			<header>
 				<img src="assets/griff.png" alt="Griffin" class="logo">
-				<h1>Griffin Focus</h1>
+				<h1>Good Griffin</h1>
 			</header>
 
 			<!-- Status area -->
@@ -32,9 +32,19 @@
 
 			<hr>
 
-			<!-- Settings -->
-			<details id="settings-panel">
-				<summary>Site List Settings</summary>
+			<!-- Categories -->
+			<details id="settings-category-panel">
+				<summary>Categories</summary>
+
+				<div class="setting-row">
+					<label>Select categories to block:</label>
+					<div id="category-checkboxes" class="category-list"></div>
+				</div>
+			</details>
+
+			<!-- Manual Site Additions -->
+			<details id="setting-website-panel">
+				<summary>Custom Websites</summary>
 
 				<div class="setting-row">
 					<label for="mode-select">Mode:</label>
@@ -45,13 +55,14 @@
 				</div>
 
 				<div class="setting-row">
-					<label for="site-list">Sites (one per line):</label>
+					<label for="site-list">Custom Sites (one per line):</label>
 					<textarea id="site-list" rows="8" spellcheck="false"></textarea>
+					<p class="help-text">Add your own sites here. Category sites are auto-included.</p>
 				</div>
-
-				<button id="btn-save" class="btn btn-secondary">Save Settings</button>
-				<span id="save-msg" class="hidden">Saved ✓</span>
 			</details>
+
+			<button id="btn-save" class="btn btn-secondary">Save Settings</button>
+			<span id="save-msg" class="hidden">Saved ✓</span>
 		</div>
 
 		<script src="popup.js"></script>

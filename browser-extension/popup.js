@@ -9,8 +9,10 @@ const modeSelect = document.getElementById('mode-select');
 const siteList = document.getElementById('site-list');
 const btnSave = document.getElementById('btn-save');
 const saveMsg = document.getElementById('save-msg');
+const categoryCheckboxes = document.getElementById('category-checkboxes');
 
 let timerInterval = null;
+let categories = [];
 
 // ─── Load current state ───
 function loadStatus() {
@@ -18,9 +20,15 @@ function loadStatus() {
 		if (!res) return;
 
 		// Populate settings
-		if (res.blacklist) siteList.value = res.blacklist.join('\n');
+		if (res.customSites) siteList.value = res.customSites.join('\n');
 		if (res.mode) modeSelect.value = res.mode;
 		if (res.focusDuration) durationInput.value = res.focusDuration;
+
+		// Load categories and selected categories
+		if (res.categories) {
+			categories = res.categories;
+			populateCategoryCheckboxes(res.selectedCategories || []);
+		}
 
 		if (res.focusActive) {
 			showActiveState(res.focusEnd);
@@ -28,6 +36,49 @@ function loadStatus() {
 			showIdleState();
 		}
 	});
+}
+
+function populateCategoryCheckboxes(selectedCategories) {
+	categoryCheckboxes.innerHTML = '';
+
+	for (const category of categories) {
+		const item = document.createElement('div');
+		item.className = 'category-item';
+
+		const checkbox = document.createElement('input');
+		checkbox.type = 'checkbox';
+		checkbox.id = `cat-${category.id}`;
+		checkbox.value = category.id;
+		checkbox.checked = selectedCategories.includes(category.id);
+
+		const info = document.createElement('div');
+		info.className = 'category-info';
+
+		const label = document.createElement('label');
+		label.htmlFor = `cat-${category.id}`;
+		label.className = 'category-name';
+		label.textContent = category.name;
+
+		const desc = document.createElement('div');
+		desc.className = 'category-description';
+		desc.textContent = category.description;
+
+		info.appendChild(label);
+		info.appendChild(desc);
+
+		const sites = document.createElement('div');
+		sites.className = 'category-sites';
+		sites.textContent = category.sites.join(', ');
+
+		item.appendChild(checkbox);
+		item.appendChild(info);
+		item.appendChild(sites);
+
+		categoryCheckboxes.appendChild(item);
+
+		// Auto-save when checkbox changes
+		checkbox.addEventListener('change', saveSettings);
+	}
 }
 
 function showActiveState(endTime) {
@@ -79,19 +130,39 @@ btnStop.addEventListener('click', () => {
 	});
 });
 
-btnSave.addEventListener('click', () => {
-	const sites = siteList.value
+function saveSettings() {
+	const customSites = siteList.value
 		.split('\n')
 		.map((s) => s.trim().toLowerCase())
 		.filter(Boolean);
 	const mode = modeSelect.value;
 	const focusDuration = parseInt(durationInput.value, 10) || 25;
 
-	chrome.runtime.sendMessage({ type: 'SAVE_SETTINGS', blacklist: sites, mode, focusDuration }, () => {
-		saveMsg.classList.remove('hidden');
-		setTimeout(() => saveMsg.classList.add('hidden'), 1500);
-	});
-});
+	// Get selected categories
+	const selectedCategories = [];
+	const checkboxes = categoryCheckboxes.querySelectorAll('input[type="checkbox"]');
+	for (const cb of checkboxes) {
+		if (cb.checked) {
+			selectedCategories.push(cb.value);
+		}
+	}
+
+	chrome.runtime.sendMessage(
+		{
+			type: 'SAVE_SETTINGS',
+			customSites,
+			selectedCategories,
+			mode,
+			focusDuration
+		},
+		() => {
+			saveMsg.classList.remove('hidden');
+			setTimeout(() => saveMsg.classList.add('hidden'), 1500);
+		}
+	);
+}
+
+btnSave.addEventListener('click', saveSettings);
 
 // ─── Init ───
 loadStatus();
