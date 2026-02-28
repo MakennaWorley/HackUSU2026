@@ -1,42 +1,48 @@
-const DEFAULT_STATE = {
-	focusOn: false,
-	endsAt: null,
-	blacklist: ['youtube.com', 'reddit.com', 'x.com', 'twitter.com']
-};
+import { DEFAULT_STATE, type FocusState } from '../backend/state';
 
-function fmtRemaining(ms) {
+function fmtRemaining(ms: number): string {
 	const s = Math.max(0, Math.floor(ms / 1000));
 	const m = Math.floor(s / 60);
 	const r = s % 60;
 	return `${m}:${String(r).padStart(2, '0')}`;
 }
 
-async function loadState() {
-	const state = await chrome.storage.local.get(DEFAULT_STATE);
+async function loadState(): Promise<FocusState> {
+	const state = (await chrome.storage.local.get(DEFAULT_STATE)) as Partial<FocusState>;
 	return { ...DEFAULT_STATE, ...state };
 }
 
-async function render() {
-	const state = await loadState();
-	document.getElementById('blacklist').value = state.blacklist.join(', ');
-	const btn = document.getElementById('toggle');
-	const status = document.getElementById('status');
+function getEl<T extends HTMLElement>(id: string): T {
+	const el = document.getElementById(id);
+	if (!el) throw new Error(`Missing element #${id}`);
+	return el as T;
+}
 
-	if (state.focusOn && state.endsAt) {
+async function render(): Promise<void> {
+	const state = await loadState();
+
+	const blacklistEl = getEl<HTMLInputElement>('blacklist');
+	const btn = getEl<HTMLButtonElement>('toggle');
+	const status = getEl<HTMLElement>('status');
+
+	blacklistEl.value = state.blacklist.join(', ');
+
+	if (state.focusOn && state.endsAt !== null) {
 		btn.textContent = 'Stop Focus';
 		status.textContent = `Focus ON — remaining ${fmtRemaining(state.endsAt - Date.now())}`;
 	} else if (state.focusOn) {
 		btn.textContent = 'Stop Focus';
-		status.textContent = `Focus ON`;
+		status.textContent = 'Focus ON';
 	} else {
 		btn.textContent = 'Start Focus';
-		status.textContent = `Focus OFF`;
+		status.textContent = 'Focus OFF';
 	}
 }
 
-document.getElementById('toggle').addEventListener('click', async () => {
+getEl<HTMLButtonElement>('toggle').addEventListener('click', async () => {
 	const state = await loadState();
-	const blacklistRaw = document.getElementById('blacklist').value.trim();
+
+	const blacklistRaw = getEl<HTMLInputElement>('blacklist').value.trim();
 	const blacklist = blacklistRaw
 		? blacklistRaw
 				.split(',')
@@ -45,7 +51,8 @@ document.getElementById('toggle').addEventListener('click', async () => {
 		: [];
 
 	if (!state.focusOn) {
-		const minutes = Math.max(1, parseInt(document.getElementById('minutes').value || '25', 10));
+		const minutesStr = getEl<HTMLInputElement>('minutes').value || '25';
+		const minutes = Math.max(1, parseInt(minutesStr, 10) || 25);
 		const endsAt = Date.now() + minutes * 60 * 1000;
 
 		await chrome.storage.local.set({ focusOn: true, endsAt, blacklist });
@@ -58,9 +65,11 @@ document.getElementById('toggle').addEventListener('click', async () => {
 		await chrome.alarms.clear('focusEnds');
 	}
 
-	render();
+	await render();
 });
 
 // update countdown every second when popup open
-render();
-setInterval(render, 1000);
+void render();
+setInterval(() => {
+	void render();
+}, 1000);

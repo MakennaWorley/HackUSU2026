@@ -1,15 +1,13 @@
-const DEFAULT_STATE = {
-	focusOn: false,
-	endsAt: null, // ms timestamp
-	blacklist: ['youtube.com', 'reddit.com', 'x.com', 'twitter.com']
-};
+import { DEFAULT_STATE, type FocusState } from './state';
 
-async function getState() {
-	const data = await chrome.storage.local.get(DEFAULT_STATE);
+// -------------------- Helpers --------------------
+async function getState(): Promise<FocusState> {
+	// chrome.storage.local.get<T>(...) isn't always strongly typed
+	const data = (await chrome.storage.local.get(DEFAULT_STATE)) as Partial<FocusState>;
 	return { ...DEFAULT_STATE, ...data };
 }
 
-function hostnameFromUrl(url) {
+function hostnameFromUrl(url: string): string {
 	try {
 		return new URL(url).hostname.replace(/^www\./, '');
 	} catch {
@@ -17,17 +15,17 @@ function hostnameFromUrl(url) {
 	}
 }
 
-function isBlocked(hostname, blacklist) {
+function isBlocked(hostname: string, blacklist: string[]): boolean {
 	return blacklist.some((d) => hostname === d || hostname.endsWith('.' + d));
 }
 
-async function enforceOnTab(tabId, url) {
+async function enforceOnTab(tabId: number, url: string): Promise<void> {
 	const state = await getState();
 
 	if (!state.focusOn) return;
 
 	// auto turn off if timer ended
-	if (state.endsAt && Date.now() > state.endsAt) {
+	if (state.endsAt !== null && Date.now() > state.endsAt) {
 		await chrome.storage.local.set({ focusOn: false, endsAt: null });
 		return;
 	}
@@ -38,25 +36,31 @@ async function enforceOnTab(tabId, url) {
 	if (isBlocked(host, state.blacklist)) {
 		// redirect to blocked page (cleaner demo than closing)
 		const blockedUrl = chrome.runtime.getURL('blocked.html');
-		chrome.tabs.update(tabId, { url: blockedUrl });
+		await chrome.tabs.update(tabId, { url: blockedUrl });
 	}
 }
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-	if (changeInfo.url) {
-		enforceOnTab(tabId, changeInfo.url);
+// -------------------- Listeners --------------------
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+	if (typeof changeInfo.url === 'string') {
+		void enforceOnTab(tabId, changeInfo.url);
 	}
 });
 
 // Also catch when switching to a tab that was already loaded
-chrome.tabs.onActivated.addListener(async ({ tabId }) => {
-	const tab = await chrome.tabs.get(tabId);
-	if (tab?.url) enforceOnTab(tabId, tab.url);
+chrome.tabs.onActivated.addListener(({ tabId }) => {
+	void (async () => {
+		const tab = await chrome.tabs.get(tabId);
+		const url = tab.url;
+		if (typeof url === 'string') {
+			await enforceOnTab(tabId, url);
+		}
+	})();
 });
 
 // Optional: alarm to flip focus mode off
-chrome.alarms.onAlarm.addListener(async (alarm) => {
+chrome.alarms.onAlarm.addListener((alarm) => {
 	if (alarm.name === 'focusEnds') {
-		await chrome.storage.local.set({ focusOn: false, endsAt: null });
+		void chrome.storage.local.set({ focusOn: false, endsAt: null });
 	}
 });
