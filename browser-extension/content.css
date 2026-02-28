@@ -46,7 +46,7 @@
 #griffin-speech-bubble {
 	background: #FFFFFF;
 	color: #101820;
-	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	font-family: "Cera", "Lato", "Segoe UI", Tahoma, Geneva, Arial, sans-serif;
 	font-size: 13px;
 	font-weight: 600;
 	padding: 10px 14px;
@@ -95,7 +95,6 @@
 	color: #FFFFFF;
 	font-size: 16px;
 	font-weight: 800;
-	font-family: 'Segoe UI', monospace;
 	display: flex;
 	align-items: center;
 	justify-content: center;

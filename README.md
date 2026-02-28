@@ -1,4 +1,4 @@
-# GET IT DONE With Griff 🦅
+# GET IT DONE With Griff! 🦅
 
 A Chrome-based browser extension that helps you stay focused by implementing customizable focus intervals (30/60/90 minutes) with an interactive griffin shimeji mascot that enforces discipline on distracting websites.
 
