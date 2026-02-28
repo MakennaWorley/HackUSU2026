@@ -8,7 +8,9 @@ const btnStop = document.getElementById('btn-stop');
 const modeSelect = document.getElementById('mode-select');
 const siteList = document.getElementById('site-list');
 const btnSave = document.getElementById('btn-save');
+const btnReset = document.getElementById('btn-reset');
 const saveMsg = document.getElementById('save-msg');
+const resetMsg = document.getElementById('reset-msg');
 const categoryCheckboxes = document.getElementById('category-checkboxes');
 
 // Custom category elements
@@ -190,6 +192,23 @@ function saveSettings() {
 }
 
 btnSave.addEventListener('click', saveSettings);
+
+btnReset.addEventListener('click', () => {
+	if (!confirm('Are you sure you want to reset all categories and sites to defaults? This will delete all custom categories and sites.')) {
+		return;
+	}
+
+	chrome.runtime.sendMessage({ type: 'RESET_TO_DEFAULTS' }, (res) => {
+		if (res && res.ok) {
+			// Show success message
+			resetMsg.classList.remove('hidden');
+			setTimeout(() => resetMsg.classList.add('hidden'), 2000);
+
+			// Reload categories and settings
+			loadStatus();
+		}
+	});
+});
 
 // ─── Add Custom Category ───
 btnAddCategory.addEventListener('click', () => {

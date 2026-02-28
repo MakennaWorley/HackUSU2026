@@ -3,14 +3,16 @@
 	<head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>Get It Done, Griff!</title>
+		<title>GET IT DONE With Griff</title>
 		<link rel="stylesheet" href="popup.css">
 	</head>
 	<body>
 		<div class="popup-container">
 			<header>
 				<img src="assets/griff.png" alt="Griffin" class="logo">
-				<h1>Get It Done, Griff!</h1>
+				<h1>Get It Done</h1>
+				<br>
+				<h2>With Griff</h2>
 			</header>
 
 			<!-- Status area -->
@@ -84,8 +86,12 @@
 				</div>
 			</details>
 
-			<button id="btn-save" class="btn btn-secondary">Save Settings</button>
+			<div class="button-group">
+				<button id="btn-save" class="btn btn-secondary">Save Settings</button>
+				<button id="btn-reset" class="btn btn-reset">Reset to Defaults</button>
+			</div>
 			<span id="save-msg" class="hidden">Saved ✓</span>
+			<span id="reset-msg" class="hidden">Reset to Defaults ✓</span>
 		</div>
 
 		<script src="popup.js"></script>

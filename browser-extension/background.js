@@ -343,6 +343,27 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 		return true;
 	}
+
+	if (msg.type === 'RESET_TO_DEFAULTS') {
+		// Reset everything to defaults
+		const defaults = {
+			customSites: [],
+			customCategories: [],
+			deletedDefaultCategories: [],
+			selectedCategories: ['social_media', 'video_streaming'],
+			mode: 'blacklist',
+			focusDuration: 25
+		};
+
+		// Build the default blacklist
+		defaults.blacklist = buildBlocklist(defaults.selectedCategories, defaults.customSites, defaults.customCategories);
+
+		chrome.storage.local.set(defaults, () => {
+			sendResponse({ ok: true });
+		});
+
+		return true;
+	}
 });
 
 // ─── Alarm listener to auto-stop focus ───
