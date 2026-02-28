@@ -23,13 +23,19 @@ header {
 	margin-bottom: 14px;
 }
 
-header .logo {
-	width: 42px;
-	height: 42px;
-	border-radius: 8px;
+header .logo-griff {
+	height: 100px;
+	width: auto;
 	object-fit: contain;
-	background: #211551;
-	padding: 4px;
+	flex-shrink: 0;
+}
+
+header .logo-text {
+	height: 100px;
+	width: auto;
+	object-fit: contain;
+	flex: 1;
+	min-width: 0;
 }
 
 header h1 {
