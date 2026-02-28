@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<style>
+		body {
+			font-family: system-ui, sans-serif;
+			width: 280px;
+			padding: 12px;
+		}
+		input {
+			width: 100%;
+			padding: 6px;
+			margin-top: 6px;
+		}
+		button {
+			width: 100%;
+			padding: 10px;
+			margin-top: 10px;
+			cursor: pointer;
+		}
+		.row {
+			margin-top: 10px;
+		}
+		small {
+			opacity: 0.8;
+		}
+		</style>
+	</head>
+	<body>
+		<h3>Good Griff</h3>
+
+		<div class="row">
+			<label>Focus minutes</label>
+			<input id="minutes" type="number" min="1" value="25">
+		</div>
+
+		<div class="row">
+			<label>Blacklist (comma-separated domains)</label>
+			<input id="blacklist" placeholder="youtube.com, reddit.com">
+			<small>Use domains like youtube.com (no https://)</small>
+		</div>
+
+		<button id="toggle" type="button">Start Focus</button>
+
+		<div class="row">
+			<div id="status"></div>
+		</div>
+
+		<script src="popup.js"></script>
+	</body>
+</html>
