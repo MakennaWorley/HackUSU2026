@@ -1,8 +1,9 @@
-import { DEFAULT_STATE, type FocusState } from './state';
+import { DEFAULT_STATE, type FocusState } from '../shared/state';
+
+console.log('SERVICE WORKER STARTED', new Date().toISOString());
 
 // -------------------- Helpers --------------------
 async function getState(): Promise<FocusState> {
-	// chrome.storage.local.get<T>(...) isn't always strongly typed
 	const data = (await chrome.storage.local.get(DEFAULT_STATE)) as Partial<FocusState>;
 	return { ...DEFAULT_STATE, ...data };
 }
@@ -35,7 +36,7 @@ async function enforceOnTab(tabId: number, url: string): Promise<void> {
 
 	if (isBlocked(host, state.blacklist)) {
 		// redirect to blocked page (cleaner demo than closing)
-		const blockedUrl = chrome.runtime.getURL('blocked.html');
+		const blockedUrl = chrome.runtime.getURL('dist/frontend/blocked.html');
 		await chrome.tabs.update(tabId, { url: blockedUrl });
 	}
 }
@@ -43,6 +44,7 @@ async function enforceOnTab(tabId: number, url: string): Promise<void> {
 // -------------------- Listeners --------------------
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
 	if (typeof changeInfo.url === 'string') {
+		console.log('griff onUpdated');
 		void enforceOnTab(tabId, changeInfo.url);
 	}
 });
@@ -53,6 +55,7 @@ chrome.tabs.onActivated.addListener(({ tabId }) => {
 		const tab = await chrome.tabs.get(tabId);
 		const url = tab.url;
 		if (typeof url === 'string') {
+			console.log('griff onActivated');
 			await enforceOnTab(tabId, url);
 		}
 	})();
@@ -61,6 +64,7 @@ chrome.tabs.onActivated.addListener(({ tabId }) => {
 // Optional: alarm to flip focus mode off
 chrome.alarms.onAlarm.addListener((alarm) => {
 	if (alarm.name === 'focusEnds') {
+		console.log('griff onAlarm');
 		void chrome.storage.local.set({ focusOn: false, endsAt: null });
 	}
 });

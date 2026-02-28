@@ -4,7 +4,7 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
-		"build": "tsc && npx shx cp -R src/frontend/*.html dist/frontend/ && npx shx cp -R assets dist/ && npx esbuild src/frontend/popup.tsx --bundle --outfile=dist/frontend/popup.js --platform=browser --target=es2022",
+		"build": "npx shx rm -rf dist && npx shx mkdir -p dist/frontend dist/backend && npx shx cp -R assets dist/ && npx shx cp src/frontend/*.html dist/frontend/ && npx esbuild src/frontend/popup.tsx --bundle --outfile=dist/frontend/popup.bundle.js --platform=browser --target=es2022 --format=iife && npx esbuild src/frontend/blocked.ts --bundle --outfile=dist/frontend/blocked.bundle.js --platform=browser --target=es2022 --format=iife && npx esbuild src/backend/service_worker.ts --bundle --outfile=dist/backend/service_worker.js --platform=browser --target=es2022 --format=iife",
 		"watch": "tsc --watch",
 		"format": "biome format --write .",
 		"format:check": "biome format .",

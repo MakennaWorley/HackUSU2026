@@ -1,15 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import ReactDOM from 'react-dom';
+import { Autocomplete, Button, Chip, TextField, Typography } from '@mui/material';
+import type React from 'react';
+import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import {
-	TextField,
-	Button,
-	Typography,
-	Autocomplete,
-	Chip,
-} from '@mui/material';
 
-import { DEFAULT_STATE, type FocusState } from '../backend/state';
+import { DEFAULT_STATE, type FocusState } from '../shared/state';
 
 function fmtRemaining(ms: number): string {
 	const s = Math.max(0, Math.floor(ms / 1000));
@@ -88,9 +82,7 @@ const App: React.FC = () => {
 					label="Focus minutes"
 					type="number"
 					value={minutes}
-					onChange={(e) =>
-						setMinutes(Math.max(1, parseInt(e.target.value, 10) || 1))
-					}
+					onChange={(e) => setMinutes(Math.max(1, parseInt(e.target.value, 10) || 1))}
 					fullWidth
 					margin="normal"
 				/>
@@ -111,32 +103,17 @@ const App: React.FC = () => {
 					setState((prev) => ({ ...prev, blacklist: newValue as string[] }));
 				}}
 				renderTags={(value, getTagProps) =>
-					value.map((option, index) => (
-						<Chip
-							variant="outlined"
-							label={option}
-							{...getTagProps({ index })}
-						/>
-					))
+					value.map((option, index) => {
+						const tagProps = getTagProps({ index });
+						const { key, ...chipProps } = tagProps as any;
+						return <Chip key={key} variant="outlined" label={option} {...chipProps} />;
+					})
 				}
-				renderInput={(params) => (
-					<TextField
-						{...params}
-						label="Blacklist domains"
-						placeholder="Add domain"
-						margin="normal"
-					/>
-				)}
+				renderInput={(params) => <TextField {...params} label="Blacklist domains" placeholder="Add domain" margin="normal" />}
 				fullWidth
 			/>
 
-			<Button
-				variant="contained"
-				color={state.focusOn ? 'secondary' : 'primary'}
-				onClick={handleToggle}
-				fullWidth
-				sx={{ mt: 2 }}
-			>
+			<Button variant="contained" color={state.focusOn ? 'secondary' : 'primary'} onClick={handleToggle} fullWidth sx={{ mt: 2 }}>
 				{state.focusOn ? 'Stop Focus' : 'Start Focus'}
 			</Button>
 
@@ -149,5 +126,5 @@ const App: React.FC = () => {
 
 const container = document.getElementById('root');
 if (container) {
-    createRoot(container).render(<App />);
+	createRoot(container).render(<App />);
 }

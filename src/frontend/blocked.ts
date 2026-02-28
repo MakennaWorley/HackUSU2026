@@ -1,4 +1,4 @@
-import { DEFAULT_STATE, type FocusState } from '../backend/state';
+import { DEFAULT_STATE, type FocusState } from '../shared/state';
 
 // format milliseconds → m:ss
 function fmt(ms: number): string {
