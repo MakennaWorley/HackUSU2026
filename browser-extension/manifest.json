@@ -1,25 +1,18 @@
 {
 	"manifest_version": 3,
-	"name": "Griffin Focus Mode",
+	"name": "Get It Done, Griff!",
 	"version": "1.0.0",
-	"description": "A focus mode extension with a griffin guardian that keeps you on task.",
-	"permissions": [
-		"storage",
-		"tabs",
-		"alarms",
-		"activeTab"
-	],
-	"host_permissions": [
-		"<all_urls>"
-	],
+	"description": "A focus mode extension with Griff the griffin that keeps you on task.",
+	"permissions": ["storage", "tabs", "alarms", "activeTab"],
+	"host_permissions": ["<all_urls>"],
 	"background": {
 		"service_worker": "background.js"
 	},
 	"action": {
 		"default_popup": "popup.html",
 		"default_icon": {
-		"48": "assets/griff.png",
-		"128": "assets/griff.png"
+			"48": "assets/griff.png",
+			"128": "assets/griff.png"
 		}
 	},
 	"icons": {
@@ -28,16 +21,16 @@
 	},
 	"content_scripts": [
 		{
-		"matches": ["<all_urls>"],
-		"js": ["content.js"],
-		"css": ["content.css"],
-		"run_at": "document_idle"
+			"matches": ["<all_urls>"],
+			"js": ["content.js"],
+			"css": ["content.css"],
+			"run_at": "document_idle"
 		}
 	],
 	"web_accessible_resources": [
 		{
-		"resources": ["assets/griff.png"],
-		"matches": ["<all_urls>"]
+			"resources": ["assets/griff.png"],
+			"matches": ["<all_urls>"]
 		}
 	]
 }
