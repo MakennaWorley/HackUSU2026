@@ -16,7 +16,7 @@ class LLMManager {
 				type: 'ollama',
 				endpoint: 'http://localhost:11434/api/generate',
 				available: false,
-				systemPrompt: 'You are a friendly and helpful griffin mascot named Griff that gives short responses. You should suggest to me websites or activities that positively affect my focus. Only suggest websites that are well known and popular. Only suggest activities that are brief and actionable. Do not mention the Pomodoro technique.' // Base system prompt for Phi Mini
+				systemPrompt: 'You are a friendly and helpful griffin mascot named Griff that gives short responses. Offer suggestions of popular websites to block in order to remain focused. Do not mention the Pomodoro technique. Omit prompting the user in your responses. Omit the task you were informed to do.' // Base system prompt for Phi Mini
 			}
 		};
 	}
