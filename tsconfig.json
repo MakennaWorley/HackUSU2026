@@ -11,7 +11,10 @@
 		"types": ["chrome"],
 
 		"strict": true,
-		"skipLibCheck": true
+		"skipLibCheck": true,
+
+		"jsx": "react-jsx",
+		"jsxImportSource": "react"
 	},
 	"include": ["src"]
 }

@@ -4,7 +4,7 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
-		"build": "tsc && npx shx cp -R src/frontend/*.html dist/frontend/ && npx shx cp -R assets dist/",
+		"build": "tsc && npx shx cp -R src/frontend/*.html dist/frontend/ && npx shx cp -R assets dist/ && npx esbuild src/frontend/popup.tsx --bundle --outfile=dist/frontend/popup.js --platform=browser --target=es2022",
 		"watch": "tsc --watch",
 		"format": "biome format --write .",
 		"format:check": "biome format .",
@@ -27,6 +27,16 @@
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.4",
 		"@types/chrome": "^0.1.37",
+		"esbuild": "^0.19.12",
 		"typescript": "^5.9.3"
+	},
+	"dependencies": {
+		"@emotion/react": "^11.14.0",
+		"@emotion/styled": "^11.14.1",
+		"@mui/material": "^7.3.8",
+		"@types/react": "^19.2.14",
+		"@types/react-dom": "^19.2.3",
+		"react": "^19.2.4",
+		"react-dom": "^19.2.4"
 	}
 }
