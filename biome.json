@@ -43,6 +43,17 @@
 		}
 	},
 
+	"css": {
+		"formatter": {
+			"enabled": true,
+			"indentStyle": "tab",
+			"indentWidth": 4,
+			"lineEnding": "lf",
+			"lineWidth": 150,
+			"quoteStyle": "single"
+		}
+	},
+
 	"assist": {
 		"enabled": true,
 		"actions": {

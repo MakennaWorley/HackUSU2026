@@ -1,61 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Griffin Focus</title>
-  <link rel="stylesheet" href="popup.css" />
-</head>
-<body>
-  <div class="popup-container">
-    <header>
-      <img src="assets/griff.png" alt="Griffin" class="logo" />
-      <h1>Griffin Focus</h1>
-    </header>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Griffin Focus</title>
+		<link rel="stylesheet" href="popup.scss">
+	</head>
+	<body>
+		<div class="popup-container">
+			<header>
+				<img src="assets/griff.png" alt="Griffin" class="logo">
+				<h1>Griffin Focus</h1>
+			</header>
 
-    <!-- Status area -->
-    <div id="status-area">
-      <p id="status-text">Focus mode is <strong>OFF</strong></p>
-      <p id="timer-text" class="hidden"></p>
-    </div>
+			<!-- Status area -->
+			<div id="status-area">
+				<p id="status-text">Focus mode is <strong>OFF</strong></p>
+				<p id="timer-text" class="hidden"></p>
+			</div>
 
-    <!-- Controls when NOT in focus -->
-    <div id="start-controls">
-      <label for="duration">Duration (minutes):</label>
-      <input type="number" id="duration" min="1" max="480" value="25" />
+			<!-- Controls when NOT in focus -->
+			<div id="start-controls">
+				<label for="duration">Duration (minutes):</label>
+				<input type="number" id="duration" min="1" max="480" value="25">
 
-      <button id="btn-start" class="btn btn-primary">Start Focus</button>
-    </div>
+				<button id="btn-start" class="btn btn-primary">Start Focus</button>
+			</div>
 
-    <!-- Controls when IN focus -->
-    <div id="active-controls" class="hidden">
-      <button id="btn-stop" class="btn btn-danger">End Focus</button>
-    </div>
+			<!-- Controls when IN focus -->
+			<div id="active-controls" class="hidden"><button id="btn-stop" class="btn btn-danger">End Focus</button></div>
 
-    <hr />
+			<hr>
 
-    <!-- Settings -->
-    <details id="settings-panel">
-      <summary>Site List Settings</summary>
+			<!-- Settings -->
+			<details id="settings-panel">
+				<summary>Site List Settings</summary>
 
-      <div class="setting-row">
-        <label for="mode-select">Mode:</label>
-        <select id="mode-select">
-          <option value="blacklist">Blacklist (block these sites)</option>
-          <option value="whitelist">Whitelist (only allow these sites)</option>
-        </select>
-      </div>
+				<div class="setting-row">
+					<label for="mode-select">Mode:</label>
+					<select id="mode-select">
+						<option value="blacklist">Blacklist (block these sites)</option>
+						<option value="whitelist">Whitelist (only allow these sites)</option>
+					</select>
+				</div>
 
-      <div class="setting-row">
-        <label for="site-list">Sites (one per line):</label>
-        <textarea id="site-list" rows="8" spellcheck="false"></textarea>
-      </div>
+				<div class="setting-row">
+					<label for="site-list">Sites (one per line):</label>
+					<textarea id="site-list" rows="8" spellcheck="false"></textarea>
+				</div>
 
-      <button id="btn-save" class="btn btn-secondary">Save Settings</button>
-      <span id="save-msg" class="hidden">Saved ✓</span>
-    </details>
-  </div>
+				<button id="btn-save" class="btn btn-secondary">Save Settings</button>
+				<span id="save-msg" class="hidden">Saved ✓</span>
+			</details>
+		</div>
 
-  <script src="popup.js"></script>
-</body>
+		<script src="popup.js"></script>
+	</body>
 </html>

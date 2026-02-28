@@ -1,0 +1,168 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+	font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+	width: 340px;
+	background: #1a1a2e;
+	color: #eee;
+}
+
+.popup-container {
+	padding: 16px;
+}
+
+header {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 14px;
+}
+
+header .logo {
+	width: 42px;
+	height: 42px;
+	border-radius: 8px;
+	object-fit: contain;
+	background: #28284a;
+	padding: 4px;
+}
+
+header h1 {
+	font-size: 18px;
+	font-weight: 700;
+	color: #f0c040;
+}
+
+#status-area {
+	margin-bottom: 12px;
+}
+
+#status-text {
+	font-size: 14px;
+}
+
+#timer-text {
+	font-size: 22px;
+	font-weight: 700;
+	color: #f0c040;
+	margin-top: 6px;
+	font-variant-numeric: tabular-nums;
+}
+
+label {
+	display: block;
+	font-size: 13px;
+	margin-bottom: 4px;
+	color: #bbb;
+}
+
+input[type="number"] {
+	width: 100%;
+	padding: 8px;
+	border: 1px solid #444;
+	border-radius: 6px;
+	background: #28284a;
+	color: #eee;
+	font-size: 14px;
+	margin-bottom: 10px;
+}
+
+select {
+	width: 100%;
+	padding: 8px;
+	border: 1px solid #444;
+	border-radius: 6px;
+	background: #28284a;
+	color: #eee;
+	font-size: 13px;
+	margin-bottom: 10px;
+}
+
+textarea {
+	width: 100%;
+	padding: 8px;
+	border: 1px solid #444;
+	border-radius: 6px;
+	background: #28284a;
+	color: #eee;
+	font-size: 12px;
+	font-family: monospace;
+	resize: vertical;
+}
+
+.btn {
+	display: inline-block;
+	padding: 10px 18px;
+	border: none;
+	border-radius: 6px;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	transition:
+		background 0.2s,
+		transform 0.1s;
+	width: 100%;
+}
+.btn:active {
+	transform: scale(0.97);
+}
+
+.btn-primary {
+	background: #f0c040;
+	color: #1a1a2e;
+}
+.btn-primary:hover {
+	background: #e0b030;
+}
+
+.btn-danger {
+	background: #e74c3c;
+	color: #fff;
+}
+.btn-danger:hover {
+	background: #c0392b;
+}
+
+.btn-secondary {
+	background: #444;
+	color: #eee;
+	width: auto;
+	margin-top: 8px;
+}
+.btn-secondary:hover {
+	background: #555;
+}
+
+hr {
+	border: none;
+	border-top: 1px solid #333;
+	margin: 14px 0;
+}
+
+details summary {
+	cursor: pointer;
+	font-size: 13px;
+	color: #aaa;
+	margin-bottom: 10px;
+}
+details summary:hover {
+	color: #f0c040;
+}
+
+.setting-row {
+	margin-bottom: 10px;
+}
+
+#save-msg {
+	margin-left: 10px;
+	font-size: 13px;
+	color: #4caf50;
+}
+
+.hidden {
+	display: none !important;
+}
