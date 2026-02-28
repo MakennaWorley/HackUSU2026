@@ -8,15 +8,16 @@
 	// ─── Warning messages the angry griffin can say ───
 	const ANGRY_MESSAGES = [
 		"Hey! You're supposed to be focusing!",
+		"You suck at time management!",
 		'Get back to work, human!',
 		"This isn't part of the plan!",
+		'Procrastination detected! Deploying claws in 10…',
+		'Do I look happy? GET BACK TO WORK!',
 		"I'm watching you… get off this site!",
 		'SQUAWK! Wrong tab! Leave NOW!',
 		"You have 10 seconds. Don't test me.",
 		'Focus mode is ON. This site is OFF-LIMITS!',
-		'Do I look happy? GET BACK TO WORK!',
-		'The griffin commands you: CLOSE THIS TAB!',
-		'Procrastination detected! Deploying claws in 10…'
+		'The griffin commands you: CLOSE THIS TAB!'
 	];
 
 	let griffinEl = null;
@@ -26,7 +27,13 @@
 	let countdownInterval = null;
 	let isBlocked = false;
 	let isDragging = false;
+	let wanderInterval = null;
 	const dragOffset = { x: 0, y: 0 };
+	let currentX = 0;
+	let currentY = 0;
+	let targetY = 0;
+	let dragCount = 0;
+	let dragResetTimeout = null;
 
 	// ─── Create the floating griffin ───
 	function createGriffin() {
@@ -44,14 +51,18 @@
 		speechBubble.id = 'griffin-speech-bubble';
 		speechBubble.classList.add('griffin-hidden');
 
-		countdownEl = document.createElement('div');
-		countdownEl.id = 'griffin-countdown';
-		countdownEl.classList.add('griffin-hidden');
-
 		griffinEl.appendChild(speechBubble);
 		griffinEl.appendChild(img);
-		griffinEl.appendChild(countdownEl);
 		document.body.appendChild(griffinEl);
+
+		// Position at bottom and start wandering
+		griffinEl.style.position = 'fixed';
+		griffinEl.style.bottom = '20px';
+		griffinEl.style.left = '50px';
+		currentX = 50;
+		currentY = window.innerHeight - 100;
+		targetY = window.innerHeight - 100;
+		startWandering();
 
 		// Make draggable
 		griffinEl.addEventListener('mousedown', startDrag);
@@ -61,6 +72,7 @@
 
 	function removeGriffin() {
 		clearTimers();
+		stopWandering();
 		if (griffinEl) {
 			griffinEl.remove();
 			griffinEl = null;
@@ -73,21 +85,54 @@
 	// ─── Drag logic ───
 	function startDrag(e) {
 		isDragging = true;
+		stopWandering();
 		const rect = griffinEl.getBoundingClientRect();
 		dragOffset.x = e.clientX - rect.left;
 		dragOffset.y = e.clientY - rect.top;
 		griffinEl.style.transition = 'none';
+
+		// Track drag count for detecting harassment
+		dragCount++;
+		if (dragCount === 1) {
+			// Start counting window – reset after 5 seconds of no drags
+			if (dragResetTimeout) clearTimeout(dragResetTimeout);
+			dragResetTimeout = setTimeout(() => {
+				dragCount = 0;
+			}, 8000);
+		}
+		// If dragged 4+ times in 8 seconds, go angry
+		if (dragCount >= 3 && !isBlocked) {
+			dragCount = 0;
+			goAngryNoClose();
+		}
 	}
 	function onDrag(e) {
 		if (!isDragging || !griffinEl) return;
-		griffinEl.style.left = e.clientX - dragOffset.x + 'px';
-		griffinEl.style.top = e.clientY - dragOffset.y + 'px';
+		const newX = e.clientX - dragOffset.x;
+		const newY = e.clientY - dragOffset.y;
+		const minX = 0;
+		const maxX = window.innerWidth - 80;
+		const maxY = window.innerHeight - 50;
+		currentX = Math.max(minX, Math.min(newX, maxX));
+		currentY = newY;
+		griffinEl.style.left = currentX + 'px';
+		griffinEl.style.top = currentY + 'px';
 		griffinEl.style.right = 'auto';
 		griffinEl.style.bottom = 'auto';
 	}
 	function endDrag() {
 		isDragging = false;
-		if (griffinEl) griffinEl.style.transition = '';
+		if (griffinEl) {
+			griffinEl.style.transition = 'top 1.6s ease-out, left 0.15s ease-out';
+			if (currentY < window.innerHeight - 150) {
+				targetY = window.innerHeight - 100;
+			} else {
+				targetY = window.innerHeight - 100;
+			}
+			griffinEl.style.top = targetY + 'px';
+			currentY = targetY;
+		}
+		setTimeout(startWandering, 600);
 	}
 
 	// ─── Angry mode ───
@@ -102,10 +147,8 @@
 		speechBubble.textContent = msg;
 		speechBubble.classList.remove('griffin-hidden');
 
-		// Start 10-second countdown
+		// Start 10-second countdown timer
 		let seconds = 10;
-		countdownEl.textContent = seconds;
-		countdownEl.classList.remove('griffin-hidden');
 
 		countdownInterval = setInterval(() => {
 			seconds--;
@@ -113,13 +156,29 @@
 				clearTimers();
 				closeTab();
 			} else {
-				countdownEl.textContent = seconds;
 				// Intensify shaking at lower counts
 				if (seconds <= 3) {
 					griffinEl.classList.add('griffin-rage');
 				}
 			}
 		}, 1000);
+	}
+
+	function goAngryNoClose() {
+		if (!griffinEl) return;
+
+		griffinEl.classList.add('griffin-angry');
+
+		// Show speech bubble with random message
+		const msg = ANGRY_MESSAGES[Math.floor(Math.random() * ANGRY_MESSAGES.length/2)];
+		speechBubble.textContent = msg;
+		speechBubble.classList.remove('griffin-hidden');
+
+		// Shake for 2 seconds then calm down
+		griffinEl.classList.add('griffin-rage');
+		warningTimeout = setTimeout(() => {
+			goCalm();
+		}, 2000);
 	}
 
 	function goCalm() {
@@ -129,7 +188,6 @@
 
 		griffinEl.classList.remove('griffin-angry', 'griffin-rage');
 		speechBubble.classList.add('griffin-hidden');
-		countdownEl.classList.add('griffin-hidden');
 	}
 
 	function clearTimers() {
@@ -140,6 +198,32 @@
 		if (countdownInterval) {
 			clearInterval(countdownInterval);
 			countdownInterval = null;
+		}
+		if (dragResetTimeout) {
+			clearTimeout(dragResetTimeout);
+			dragResetTimeout = null;
+		}
+	}
+
+	// ─── Autonomous wandering ───
+	function startWandering() {
+		if (wanderInterval || isDragging) return;
+		wanderInterval = setInterval(() => {
+			if (isDragging || !griffinEl) return;
+			const moveAmount = (Math.random() - 0.5) * 80;
+			const newX = currentX + moveAmount;
+			const minX = 0;
+			const maxX = window.innerWidth - 80;
+			currentX = Math.max(minX, Math.min(newX, maxX));
+			griffinEl.style.transition = 'left 0.8s ease-in-out';
+			griffinEl.style.left = currentX + 'px';
+		}, 2000);
+	}
+
+	function stopWandering() {
+		if (wanderInterval) {
+			clearInterval(wanderInterval);
+			wanderInterval = null;
 		}
 	}
 
