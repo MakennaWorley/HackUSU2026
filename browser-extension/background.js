@@ -231,22 +231,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 			sendResponse({ blocked, focusActive: true, end: data.focusEnd });
 		});
 		return true;
-	}
-
+		chrome.storage.local.get(['customSites', 'selectedCategories', 'customCategories'], (data) => {
 	if (msg.type === 'CLOSE_TAB') {
 		if (sender.tab && sender.tab.id) {
 			chrome.tabs.remove(sender.tab.id);
 		}
 		sendResponse({ ok: true });
 		return true;
-	}
-
-	if (msg.type === 'SAVE_SETTINGS') {
-		const updates = {};
-		if (msg.customSites !== undefined) updates.customSites = msg.customSites;
-		if (msg.selectedCategories !== undefined) updates.selectedCategories = msg.selectedCategories;
-		if (msg.mode) updates.mode = msg.mode;
-		if (msg.focusDuration) updates.focusDuration = msg.focusDuration;
+			chrome.storage.local.set(updates, () => sendResponse({ ok: true }));
 
 		// Rebuild the blacklist from selected categories and custom sites
 		chrome.storage.local.get(['customSites', 'selectedCategories', 'customCategories'], (data) => {
@@ -258,8 +250,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 			chrome.storage.local.set(updates, () => sendResponse({ ok: true }));
 		});
-
-		return true;
+		chrome.storage.local.get(['customCategories', 'selectedCategories'], (data) => {
 	}
 
 	if (msg.type === 'ADD_CATEGORY') {
@@ -289,10 +280,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 			// Rebuild blacklist
 			chrome.storage.local.get(['customSites'], (data2) => {
 				const blacklist = buildBlocklist(selectedCategories, data2.customSites || [], customCategories);
-
-				chrome.storage.local.set(
-					{
-						customCategories,
 						selectedCategories,
 						blacklist
 					},
@@ -307,8 +294,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 	}
 
 	if (msg.type === 'DELETE_CATEGORY') {
-		if (!msg.categoryId) {
-			sendResponse({ ok: false, error: 'No category ID provided' });
+		chrome.storage.local.get(['customCategories', 'selectedCategories', 'deletedDefaultCategories'], (data) => {
 			return;
 		}
 
@@ -333,10 +319,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 			// Rebuild blacklist
 			chrome.storage.local.get(['customSites'], (data2) => {
-				updates.blacklist = buildBlocklist(updates.selectedCategories, data2.customSites || [], updates.customCategories);
-
-				chrome.storage.local.set(updates, () => {
-					sendResponse({ ok: true });
 				});
 			});
 		});

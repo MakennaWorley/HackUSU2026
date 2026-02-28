@@ -5,19 +5,19 @@
 
 	const GRIFFIN_IMG = chrome.runtime.getURL('assets/griff.png');
 
-	// ─── Warning messages the angry griffin can say ───
-	const ANGRY_MESSAGES = [
-		"Hey! You're supposed to be focusing!",
-		"You suck at time management!",
-		'Get back to work, human!',
-		"This isn't part of the plan!",
-		'Procrastination detected! Deploying claws in 10…',
-		'Do I look happy? GET BACK TO WORK!',
-		"I'm watching you… get off this site!",
-		'SQUAWK! Wrong tab! Leave NOW!',
-		"You have 10 seconds. Don't test me.",
-		'Focus mode is ON. This site is OFF-LIMITS!',
-		'The griffin commands you: CLOSE THIS TAB!'
+	// ─── Warning messages the griffin can say ───
+	const GRIFFIN_MESSAGES = [
+		'Hey there—remember what you meant to focus on.',
+		'A gentle reminder: your task is waiting.',
+		"Let's return to your work—you've got this.",
+		"This doesn't seem part of your current plan.",
+		'I believe you intended to stay on task.',
+		'The griffin suggests returning to your objective.',
+		"I'm keeping watch—shall we head back?",
+		'SQUAWK! A small detour—time to refocus.',
+		'Just checking in—ready to continue?',
+		"Focus mode is active—let's honor that commitment.",
+		'The griffin encourages you to continue your quest.'
 	];
 
 	let griffinEl = null;
@@ -170,7 +170,7 @@
 		griffinEl.classList.add('griffin-angry');
 
 		// Show speech bubble with random message
-		const msg = ANGRY_MESSAGES[Math.floor(Math.random() * ANGRY_MESSAGES.length/2)];
+		const msg = ANGRY_MESSAGES[Math.floor((Math.random() * ANGRY_MESSAGES.length) / 2)];
 		speechBubble.textContent = msg;
 		speechBubble.classList.remove('griffin-hidden');
 
