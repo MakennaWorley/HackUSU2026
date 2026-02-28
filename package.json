@@ -1,0 +1,29 @@
+{
+	"name": "goodGriff",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"format": "biome format --write .",
+		"format:check": "biome format .",
+		"lint": "biome lint .",
+		"check": "biome check --write .",
+		"check:ci": "biome check ."
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/MakennaWorley/HackUSU2026.git"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"type": "commonjs",
+	"bugs": {
+		"url": "https://github.com/MakennaWorley/HackUSU2026/issues"
+	},
+	"homepage": "https://github.com/MakennaWorley/HackUSU2026#readme",
+	"devDependencies": {
+		"@biomejs/biome": "^2.4.4",
+		"typescript": "^5.9.3"
+	}
+}
