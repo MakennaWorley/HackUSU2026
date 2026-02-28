@@ -11,7 +11,7 @@
 	transition: transform 0.3s ease;
 	cursor: grab;
 	user-select: none;
-	filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+	filter: drop-shadow(0 4px 12px #101820);
 }
 
 #griffin-focus-container:active {
@@ -45,7 +45,7 @@
 /* ── Speech bubble ── */
 #griffin-speech-bubble {
 	background: #fff;
-	color: #1a1a2e;
+	color: #211551;
 	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 	font-size: 13px;
 	font-weight: 600;
@@ -55,7 +55,7 @@
 	text-align: center;
 	position: relative;
 	margin-bottom: 8px;
-	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+	box-shadow: 0 2px 10px #101820;
 	animation: griffin-bubble-in 0.3s ease;
 }
 
@@ -69,7 +69,7 @@
 	height: 0;
 	border-left: 8px solid transparent;
 	border-right: 8px solid transparent;
-	border-top: 8px solid #fff;
+	border-top: 8px solid #FFFFFF;
 }
 
 @keyframes griffin-bubble-in {
@@ -92,7 +92,7 @@
 	height: 32px;
 	border-radius: 50%;
 	background: #e74c3c;
-	color: #fff;
+	color: #FFFFFF;
 	font-size: 16px;
 	font-weight: 800;
 	font-family: 'Segoe UI', monospace;
@@ -152,7 +152,7 @@
 }
 
 .griffin-rage {
-	filter: drop-shadow(0 0 16px rgba(231, 76, 60, 0.8)) !important;
+	filter: drop-shadow(0 0 16px red) !important;
 }
 
 /* ── Swipe / close animation ── */
@@ -184,7 +184,7 @@
 .griffin-angry ~ .griffin-page-dim {
 	position: fixed;
 	inset: 0;
-	background: rgba(0, 0, 0, 0.15);
+	background: #101820;
 	z-index: 2147483646;
 	pointer-events: none;
 }
