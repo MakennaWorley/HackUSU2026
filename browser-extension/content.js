@@ -7,18 +7,18 @@
 
 	// ─── Warning messages the griffin can say ───
 	const ANGRY_MESSAGES = [
-        'Hey there—remember what you meant to focus on.',
-        'A gentle reminder: your task is waiting.',
-        "Let's return to your work—you've got this.",
-        "This doesn't seem part of your current plan.",
-        'I believe you intended to stay on task.',
-        'The griffin suggests returning to your objective.',
-        "I'm keeping watch—shall we head back?",
-        'SQUAWK! A small detour—time to refocus.',
-        'Just checking in—ready to continue?',
-        "Focus mode is active—let's honor that commitment.",
-        'The griffin encourages you to continue your quest.'
-    ];
+		'Hey there—remember what you meant to focus on.',
+		'A gentle reminder: your task is waiting.',
+		"Let's return to your work—you've got this.",
+		"This doesn't seem part of your current plan.",
+		'I believe you intended to stay on task.',
+		'The griffin suggests returning to your objective.',
+		"I'm keeping watch—shall we head back?",
+		'SQUAWK! A small detour—time to refocus.',
+		'Just checking in—ready to continue?',
+		"Focus mode is active—let's honor that commitment.",
+		'The griffin encourages you to continue your quest.'
+	];
 
 	let griffinEl = null;
 	let speechBubble = null;
@@ -79,13 +79,13 @@
 		griffinEl.addEventListener('mousedown', startDrag);
 		document.addEventListener('mousemove', onDrag);
 		document.addEventListener('mouseup', endDrag);
-		
+
 		// Open chat on triple-click (if not dragging)
 		griffinEl.addEventListener('click', (e) => {
 			if (isDragging) return;
 
 			clickCount++;
-			
+
 			// Reset click count after 2 seconds of inactivity
 			if (clickResetTimeout) clearTimeout(clickResetTimeout);
 			clickResetTimeout = setTimeout(() => {
@@ -322,28 +322,42 @@
 		}
 	});
 
-	// ─── LLM Integration ───
+	// ─── LLM Integration (via background script to avoid CORS) ───
 	async function getAIResponse(prompt) {
-		try {
-			// Ensure LLM manager is initialized
-			if (!llmManager.initialized) {
-				await llmManager.init();
-			}
-
-			// Get response from best available model
-			const response = await llmManager.ask(prompt);
-			return response;
-		} catch (error) {
-			console.error('❌ AI response failed:', error);
-			return null;
-		}
+		return new Promise((resolve) => {
+			chrome.runtime.sendMessage({ type: 'LLM_ASK', prompt }, (response) => {
+				if (chrome.runtime.lastError) {
+					console.error('❌ AI request failed:', chrome.runtime.lastError);
+					resolve(null);
+					return;
+				}
+				if (response.error) {
+					console.error('❌ AI response error:', response.error);
+					resolve(null);
+				} else {
+					resolve(response.response);
+				}
+			});
+		});
 	}
 
 	async function getAIStatus() {
-		if (!llmManager.initialized) {
-			await llmManager.init();
-		}
-		return llmManager.getStatus();
+		return new Promise((resolve) => {
+			chrome.runtime.sendMessage({ type: 'LLM_INIT' }, (response) => {
+				if (chrome.runtime.lastError) {
+					resolve({
+						availableModels: [],
+						currentModel: 'None'
+					});
+					return;
+				}
+				const availableModels = response.available ? [response.modelDisplayName] : [];
+				resolve({
+					availableModels,
+					currentModel: response.available ? response.modelDisplayName : 'None'
+				});
+			});
+		});
 	}
 
 	// ─── Chat Interface ───

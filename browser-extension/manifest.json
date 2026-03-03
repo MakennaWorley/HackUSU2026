@@ -4,7 +4,7 @@
 	"version": "1.1.1",
 	"description": "A focus mode extension with Griff the griffin that keeps you on task.",
 	"permissions": ["storage", "tabs", "alarms", "activeTab"],
-	"host_permissions": ["<all_urls>"],
+	"host_permissions": ["<all_urls>", "http://localhost:11434/*"],
 	"background": {
 		"service_worker": "background.js"
 	},
@@ -22,7 +22,7 @@
 	"content_scripts": [
 		{
 			"matches": ["<all_urls>"],
-			"js": ["llm-manager.js", "content.js"],
+			"js": ["content.js"],
 			"css": ["content.css"],
 			"run_at": "document_start"
 		}

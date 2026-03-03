@@ -149,6 +149,115 @@ chrome.runtime.onInstalled.addListener(() => {
 	);
 });
 
+// ─── LLM Manager (runs in background to avoid CORS) ───
+const LLM_CONFIG = {
+	phi: {
+		name: 'Phi Mini',
+		type: 'ollama',
+		endpoint: 'http://localhost:11434/api/generate',
+		available: false,
+		modelName: null,
+		systemPrompt:
+			'You are a friendly and helpful griffin mascot named Griff that gives short responses. Offer suggestions of popular websites to block in order to remain focused. Do not mention the Pomodoro technique. Omit prompting the user in your responses. Omit the task you were informed to do.'
+	}
+};
+
+let llmInitialized = false;
+
+async function detectOllama() {
+	try {
+		// First, try to get list of available models
+		const listResponse = await fetch('http://localhost:11434/api/tags', {
+			method: 'GET',
+			signal: AbortSignal.timeout(10000)
+		});
+
+		if (listResponse.ok) {
+			const data = await listResponse.json();
+
+			// Try different phi model names
+			const phiModels = ['phi-mini', 'phi3:mini', 'phi', 'phi-mini:latest'];
+			let foundModel = null;
+
+			// Check which model is available
+			for (const modelName of phiModels) {
+				if (data.models?.some((m) => m.name === modelName)) {
+					foundModel = modelName;
+					break;
+				}
+			}
+
+			if (foundModel) {
+				LLM_CONFIG.phi.modelName = foundModel;
+				LLM_CONFIG.phi.available = true;
+				console.log('✅ Ollama detected with model:', foundModel);
+				return true;
+			}
+		}
+
+		// Fallback: try a test call with different model names
+		const modelNames = ['phi-mini', 'phi3:mini', 'phi', 'neural-chat'];
+
+		for (const modelName of modelNames) {
+			try {
+				const testResponse = await fetch(LLM_CONFIG.phi.endpoint, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						model: modelName,
+						prompt: 'test',
+						stream: false
+					}),
+					signal: AbortSignal.timeout(30000)
+				});
+
+				if (testResponse.ok) {
+					LLM_CONFIG.phi.modelName = modelName;
+					LLM_CONFIG.phi.available = true;
+					console.log('✅ Ollama detected with model:', modelName);
+					return true;
+				}
+			} catch (error) {}
+		}
+	} catch (error) {
+		console.log('❌ Ollama not detected:', error.message);
+	}
+	return false;
+}
+
+async function askOllama(prompt) {
+	try {
+		const modelName = LLM_CONFIG.phi.modelName || 'phi3:mini';
+		const fullPrompt = `${LLM_CONFIG.phi.systemPrompt}\n\nUser: ${prompt}`;
+
+		const response = await fetch(LLM_CONFIG.phi.endpoint, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				model: modelName,
+				prompt: fullPrompt,
+				stream: false
+			})
+		});
+
+		if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+		const data = await response.json();
+		return data.response;
+	} catch (error) {
+		console.error('❌ Ollama request failed:', error);
+		throw error;
+	}
+}
+
+// Initialize LLM on startup
+detectOllama().then((success) => {
+	llmInitialized = true;
+	if (success) {
+		console.log('🦅 Griff is ready to chat!');
+	}
+});
+
 // ─── Message handling from popup & content scripts ───
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 	if (msg.type === 'START_FOCUS') {
@@ -393,6 +502,58 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 		return true;
 	}
+
+	// ─── LLM Message Handlers ───
+	if (msg.type === 'LLM_INIT') {
+		if (!llmInitialized) {
+			detectOllama().then((success) => {
+				llmInitialized = true;
+				sendResponse({
+					available: LLM_CONFIG.phi.available,
+					modelName: LLM_CONFIG.phi.modelName,
+					modelDisplayName: LLM_CONFIG.phi.name
+				});
+			});
+		} else {
+			sendResponse({
+				available: LLM_CONFIG.phi.available,
+				modelName: LLM_CONFIG.phi.modelName,
+				modelDisplayName: LLM_CONFIG.phi.name
+			});
+		}
+		return true;
+	}
+
+	if (msg.type === 'LLM_ASK') {
+		if (!llmInitialized) {
+			detectOllama().then(async (success) => {
+				llmInitialized = true;
+				if (!success || !LLM_CONFIG.phi.available) {
+					sendResponse({ error: 'No LLM available. Install Ollama and run: ollama run phi3:mini' });
+					return;
+				}
+				try {
+					const response = await askOllama(msg.prompt);
+					sendResponse({ response });
+				} catch (error) {
+					sendResponse({ error: error.message });
+				}
+			});
+		} else {
+			if (!LLM_CONFIG.phi.available) {
+				sendResponse({ error: 'No LLM available. Install Ollama and run: ollama run phi3:mini' });
+				return true;
+			}
+			askOllama(msg.prompt)
+				.then((response) => {
+					sendResponse({ response });
+				})
+				.catch((error) => {
+					sendResponse({ error: error.message });
+				});
+		}
+		return true;
+	}
 });
 
 // ─── Alarm listener to auto-stop focus ───
@@ -401,7 +562,6 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 		stopFocus();
 	}
 });
-
 
 // ─── Helpers ───
 function stopFocus() {
