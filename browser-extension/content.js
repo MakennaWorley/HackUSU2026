@@ -424,8 +424,23 @@
 
 					// Get AI response
 					getAIResponse(prompt).then((response) => {
+						// Remove loading message
+						const loadingMessages = chatContainer.querySelectorAll('.loading-message');
+						loadingMessages.forEach((msg) => msg.remove());
+
 						if (response) {
-							addChatMessage(chatContainer, response, 'griffin');
+							// Clean up response - remove any markdown code blocks or JSON formatting
+							const cleanedResponse = response
+								.replace(/```json\s*/g, '')
+								.replace(/```\s*/g, '')
+								.trim();
+
+							// If the response looks like JSON, don't display it
+							if (cleanedResponse.startsWith('{') && cleanedResponse.endsWith('}')) {
+								addChatMessage(chatContainer, "I've processed your request and updated your focus settings!", 'griffin');
+							} else {
+								addChatMessage(chatContainer, cleanedResponse, 'griffin');
+							}
 						} else {
 							addChatMessage(chatContainer, 'Sorry, I had trouble thinking...', 'griffin');
 						}

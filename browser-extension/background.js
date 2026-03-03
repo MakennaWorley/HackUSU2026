@@ -157,8 +157,22 @@ const LLM_CONFIG = {
 		endpoint: 'http://localhost:11434/api/generate',
 		available: false,
 		modelName: null,
-		systemPrompt:
-			'You are a friendly and helpful griffin mascot named Griff that gives short responses. Offer suggestions of popular websites to block in order to remain focused. Do not mention the Pomodoro technique. Omit prompting the user in your responses. Omit the task you were informed to do.'
+		systemPrompt: `You are Griff, a friendly griffin mascot helping users stay focused.
+
+			When a user tells you about their task or goal, respond ONLY with valid JSON in this exact format:
+			{
+			"intent": "what the user wants to focus on",
+			"suggestions": ["youtube.com", "reddit.com", "instagram.com"],
+			"message": "A short encouraging message from Griff"
+			}
+
+			Rules:
+			- Always include 3-5 popular distracting websites to block (youtube.com, reddit.com, instagram.com, twitter.com, facebook.com, tiktok.com, netflix.com, etc.)
+			- Keep the message short and encouraging
+			- Output ONLY the JSON, no other text before or after
+			- Do not mention Pomodoro
+
+			If the user is just chatting (not asking for focus help), respond naturally as Griff the friendly griffin mascot.`
 	}
 };
 
@@ -525,33 +539,87 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 	}
 
 	if (msg.type === 'LLM_ASK') {
-		if (!llmInitialized) {
-			detectOllama().then(async (success) => {
-				llmInitialized = true;
-				if (!success || !LLM_CONFIG.phi.available) {
-					sendResponse({ error: 'No LLM available. Install Ollama and run: ollama run phi3:mini' });
-					return;
-				}
-				try {
-					const response = await askOllama(msg.prompt);
-					sendResponse({ response });
-				} catch (error) {
-					sendResponse({ error: error.message });
-				}
-			});
-		} else {
-			if (!LLM_CONFIG.phi.available) {
-				sendResponse({ error: 'No LLM available. Install Ollama and run: ollama run phi3:mini' });
-				return true;
-			}
-			askOllama(msg.prompt)
-				.then((response) => {
-					sendResponse({ response });
-				})
-				.catch((error) => {
-					sendResponse({ error: error.message });
-				});
+		if (!LLM_CONFIG.phi.available) {
+			sendResponse({ error: 'Ollama is not running.' });
+			return true;
 		}
+
+		askOllama(msg.prompt)
+			.then((rawResponse) => {
+				console.log('🦅 Raw LLM response:', rawResponse);
+
+				try {
+					// Try to extract JSON from the response (find first complete JSON object)
+					const jsonMatch = rawResponse.match(/\{[\s\S]*?\}/);
+
+					if (jsonMatch) {
+						// Parse the JSON from the LLM
+						const parsed = JSON.parse(jsonMatch[0]);
+						console.log('✅ Parsed JSON:', parsed);
+
+						// Check if this is a focus request (has suggestions field)
+						if (parsed.suggestions && Array.isArray(parsed.suggestions)) {
+							// This is a focus request - handle site blocking
+							chrome.storage.local.get(['customSites', 'selectedCategories', 'customCategories'], (data) => {
+								const currentCustomSites = data.customSites || [];
+
+								// Filter out suggestions the user already has blocked
+								const newSites = parsed.suggestions.filter((site) => !currentCustomSites.includes(site));
+
+								if (newSites.length > 0) {
+									const updatedCustomSites = [...currentCustomSites, ...newSites];
+									const updatedBlacklist = buildBlocklist(
+										data.selectedCategories || [],
+										updatedCustomSites,
+										data.customCategories || []
+									);
+
+									// Save the new list automatically
+									chrome.storage.local.set({
+										customSites: updatedCustomSites,
+										blacklist: updatedBlacklist
+									});
+									console.log('✅ Added sites:', newSites);
+								}
+
+								// Send back just the message (not the whole JSON)
+								sendResponse({
+									response: parsed.message || "I've updated your blocked sites!",
+									addedSites: newSites
+								});
+							});
+						} else {
+							// JSON exists but no suggestions - just general chat
+							// Extract the message field if it exists
+							const message = parsed.message || rawResponse;
+							sendResponse({ response: message });
+						}
+					} else {
+						// No JSON found - just send the raw response for general chat
+						console.log('⚠️ No JSON in response, sending raw text');
+						// Clean up any system prompt leakage
+						const cleanedResponse = rawResponse
+							.replace(/You are Eden.*?User:/s, '') // Remove Eden contamination
+							.replace(/You are Griff.*?User:/s, '') // Remove system prompt leakage
+							.trim();
+						sendResponse({ response: cleanedResponse || rawResponse });
+					}
+				} catch (e) {
+					console.error('❌ Failed to parse LLM response:', e, 'Raw:', rawResponse);
+					// Fallback - clean up and send raw response
+					const cleanedResponse = rawResponse
+						.replace(/You are Eden.*?User:/s, '')
+						.replace(/You are Griff.*?User:/s, '')
+						.replace(/```json/g, '')
+						.replace(/```/g, '')
+						.trim();
+					sendResponse({ response: cleanedResponse || rawResponse });
+				}
+			})
+			.catch((error) => {
+				console.error('❌ Ollama request error:', error);
+				sendResponse({ error: error.message });
+			});
 		return true;
 	}
 });
