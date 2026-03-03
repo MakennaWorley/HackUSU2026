@@ -20,11 +20,11 @@ With the Windows application, you can have Griff monitor Applications outside of
 ## How It Works
 
 1. **Start a Session**: Type in the session length from the extension popup
-2. **Stay Focused**: The griffin watches over you as the timer counts down
+2. **Stay Focused**: Griff watches over you as the timer counts down
 3. **Enforce Discipline**: While focusing, any open blacklisted websites are automatically closed
-4. **Interact with the Shimeji**: The griffin mascot moves around your screen, adding a fun element to your focus session
+4. **Interact with the Shimeji**: Griff moves around your screen, adding a fun element to your focus session
 
-## Installation
+## Installation (Not via Chrome Extensions)
 
 1. Download or clone this repository
 2. Open Chrome and navigate to `chrome://extensions/`
@@ -36,13 +36,17 @@ With the Windows application, you can have Griff monitor Applications outside of
 
 Coming soon
 
+### LLM Install
+
+Coming soon
+
 ## Configuration
 
 Configure your focus intervals and blacklisted websites:
 - Open the extension options/settings
 - Set your preferred interval duration
 - Add websites to the blacklist that tend to distract you
-- Customize the griffin's behavior (optional)
+- Customize Griff's behavior (optional)
 
 ## Tech Stack
 

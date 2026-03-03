@@ -157,13 +157,13 @@ const LLM_CONFIG = {
 		endpoint: 'http://localhost:11434/api/generate',
 		available: false,
 		modelName: null,
-		systemPrompt: `You are Griff, a friendly griffin mascot helping users stay focused.
+		systemPrompt: `You are Griff, a friendly griffin helping users stay focused.
 
 			When a user tells you about their task or goal, respond ONLY with valid JSON in this exact format:
 			{
 			"intent": "what the user wants to focus on",
 			"suggestions": ["youtube.com", "reddit.com", "instagram.com"],
-			"message": "A short encouraging message from Griff"
+			"message": "A short encouraging messBaage from Griff"
 			}
 
 			Rules:
@@ -172,7 +172,7 @@ const LLM_CONFIG = {
 			- Output ONLY the JSON, no other text before or after
 			- Do not mention Pomodoro
 
-			If the user is just chatting (not asking for focus help), respond naturally as Griff the friendly griffin mascot.`
+			If the user is just chatting (not asking for focus help), respond naturally as Griff the friendly griffin.`
 	}
 };
 
@@ -231,7 +231,7 @@ async function detectOllama() {
 					console.log('✅ Ollama detected with model:', modelName);
 					return true;
 				}
-			} catch (error) {}
+			} catch {}
 		}
 	} catch (error) {
 		console.log('❌ Ollama not detected:', error.message);
@@ -350,10 +350,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 			const mode = data.mode || 'blacklist';
 			let blocked = false;
 			if (mode === 'blacklist') {
-				blocked = list.some((entry) => hostname === entry || hostname.endsWith('.' + entry));
+				blocked = list.some((entry) => hostname === entry || hostname.endsWith(`.${entry}`));
 			} else {
 				// whitelist mode – block everything NOT in the list
-				blocked = !list.some((entry) => hostname === entry || hostname.endsWith('.' + entry));
+				blocked = !list.some((entry) => hostname === entry || hostname.endsWith(`.${entry}`));
 			}
 			sendResponse({ blocked, focusActive: true, end: data.focusEnd });
 		});
@@ -366,7 +366,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 	}
 
 	if (msg.type === 'CLOSE_TAB') {
-		if (sender.tab && sender.tab.id) {
+		if (sender.tab?.id) {
 			chrome.tabs.remove(sender.tab.id);
 		}
 		sendResponse({ ok: true });
@@ -520,7 +520,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 	// ─── LLM Message Handlers ───
 	if (msg.type === 'LLM_INIT') {
 		if (!llmInitialized) {
-			detectOllama().then((success) => {
+			detectOllama().then(() => {
 				llmInitialized = true;
 				sendResponse({
 					available: LLM_CONFIG.phi.available,
@@ -650,7 +650,7 @@ async function broadcastToTabs(message) {
 			try {
 				// Send message to content script
 				await chrome.tabs.sendMessage(tab.id, message);
-			} catch (err) {
+			} catch {
 				// Content script might not be injected yet, try to inject it
 				try {
 					await chrome.scripting.executeScript({
@@ -659,7 +659,7 @@ async function broadcastToTabs(message) {
 					});
 					// Retry sending message after injection
 					await chrome.tabs.sendMessage(tab.id, message);
-				} catch (injectErr) {
+				} catch {
 					// Silently fail for tabs that can't be injected
 				}
 			}
@@ -706,7 +706,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
 			// Focus is active, notify this tab
 			try {
 				await chrome.tabs.sendMessage(activeInfo.tabId, { type: 'FOCUS_STARTED', end: data.focusEnd });
-			} catch (err) {
+			} catch {
 				// Content script not loaded, inject it
 				try {
 					await chrome.scripting.executeScript({
@@ -721,16 +721,16 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
 					setTimeout(async () => {
 						try {
 							await chrome.tabs.sendMessage(activeInfo.tabId, { type: 'FOCUS_STARTED', end: data.focusEnd });
-						} catch (e) {
+						} catch {
 							// Still failed, ignore
 						}
 					}, 100);
-				} catch (injectErr) {
+				} catch {
 					// Can't inject, ignore
 				}
 			}
 		}
-	} catch (err) {
+	} catch {
 		// Tab no longer exists or other error
 	}
 });
@@ -749,7 +749,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 		// Focus is active, notify this tab
 		try {
 			await chrome.tabs.sendMessage(tabId, { type: 'FOCUS_STARTED', end: data.focusEnd });
-		} catch (err) {
+		} catch {
 			// Content script might not be ready yet, it will check on init
 		}
 	}

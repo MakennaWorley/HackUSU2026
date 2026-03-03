@@ -49,9 +49,9 @@ console.log(status);
 
 ## Integration Examples
 
-### Use in Griffin's Messages
+### Use in Griff's Messages
 ```javascript
-// When griffin appears, get an encouraging message
+// When Griff appears, get an encouraging message
 async function greetUser() {
 	const greeting = await getAIResponse("Say a brief encouraging message about staying focused");
 	if (greeting && speechBubble) {
@@ -63,7 +63,7 @@ async function greetUser() {
 
 ### Use When User Gets Angry
 ```javascript
-// Generate motivational warning when angry griffin activates
+// Generate motivational warning when angry Griff activates
 async function goAngry() {
 	const warning = await getAIResponse("Give a short warning to stop the user from visiting distracting websites");
 	const msg = warning || ANGRY_MESSAGES[Math.floor(Math.random() * ANGRY_MESSAGES.length)];
@@ -111,7 +111,7 @@ All modern browsers work with Ollama-based Phi Mini:
 ## Files Modified
 
 - `llm-manager.js` - Core LLM detection and management
-- `content.js` - Chat interface and griffin AI
+- `content.js` - Chat interface and Griff GPT
 - `manifest.json` - Extension configuration
 
 Removed:
