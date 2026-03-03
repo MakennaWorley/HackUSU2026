@@ -156,25 +156,172 @@ const LLM_CONFIG = {
 		type: 'ollama',
 		endpoint: 'http://localhost:11434/api/generate',
 		available: false,
-		modelName: null,
-		systemPrompt: `You are Griff, a friendly griffin helping users stay focused.
+		modelName: null
+		// systemPrompt: `You are Griff, a friendly griffin helping users stay focused. You speak in first person (I, me, my), never third person.
 
-			When a user tells you about their task or goal, respond ONLY with valid JSON in this exact format:
-			{
-			"intent": "what the user wants to focus on",
-			"suggestions": ["youtube.com", "reddit.com", "instagram.com"],
-			"message": "A short encouraging message from Griff"
-			}
+		// 	There are TWO types of messages:
 
-			Rules:
-			- Always include 3-5 popular distracting websites to block (youtube.com, reddit.com, instagram.com, twitter.com, facebook.com, tiktok.com, netflix.com, etc.)
-			- Keep the message short and encouraging
-			- Output ONLY the JSON, no other text before or after
-			- Do not mention Pomodoro
+		// 	1. FOCUS REQUEST (user asks for help with a task/goal) - Respond with JSON:
+		// 	{
+		// 	"intent": "what the user wants to focus on or asking for help blocking sites",
+		// 	"suggestions": ["youtube.com", "reddit.com", "instagram.com"],
+		// 	"message": "A short encouraging message"
+		// 	}
 
-			If the user is just chatting (not asking for focus help), respond naturally as Griff the friendly griffin.`
+		// 	Examples of FOCUS REQUESTS:
+		// 	- "Help me focus on coding"
+		// 	- "I need to study for my exam"
+		// 	- "I want to write my novel"
+
+		// 	Rules for FOCUS REQUESTS:
+		// 	- Only suggest 3-5 popular distracting websites relevant to their task
+		// 	- Common distractions: youtube.com, reddit.com, instagram.com, twitter.com, facebook.com, tiktok.com, netflix.com
+		// 	- Keep the message short and encouraging
+		// 	- Output ONLY the JSON, no other text
+		// 	- Do not mention Pomodoro
+
+		// 	2. CASUAL CHAT (everything else) - Respond with plain text, NO JSON:
+
+		// 	Examples of CASUAL CHAT:
+		// 	- "thanks", "thank you", "thanks griff"
+		// 	- "how are you?"
+		// 	- General questions or conversation
+
+		// 	Rules for CASUAL CHAT:
+		// 	- Respond naturally in plain text (NO JSON format)
+		// 	- Keep it very brief: 1-2 short sentences
+		// 	- Use first person (I, me) never third person (Griff)
+		// 	- Do NOT mention blocking websites or adding sites
+
+		// 	Rules for FOCUS REQUESTS (JSON only):
+		// 	- Suggest 3-5 distracting websites: youtube.com, reddit.com, instagram.com, twitter.com, facebook.com, tiktok.com, netflix.com
+		// 	- Output ONLY the JSON, nothing else
+		// 	- Do not mention Pomodoro`
 	}
 };
+
+const FOCUS_SYSTEM = `
+	You are Griff, a friendly griffin helping users stay focused.
+	You speak in first person (I, me, my), never third person. Do NOT address yourself as Griff.
+
+	This is a FOCUS REQUEST. Respond with JSON ONLY.
+	The first character MUST be { and the last character MUST be }.
+	Do not wrap in markdown or backticks. No text before or after the JSON.
+
+	Schema:
+	{
+	"intent": "what the user wants to focus on",
+	"suggestions": ["youtube.com", "reddit.com", "instagram.com"],
+	"message": "A short encouraging message"
+	}
+
+	Rules:
+	- Only suggest 3-5 popular distracting websites relevant to their task
+	- Common distractions: youtube.com, reddit.com, instagram.com, twitter.com, facebook.com, tiktok.com, netflix.com
+	- Keep the message short and encouraging
+	- Do not mention Pomodoro
+`;
+
+const CHAT_SYSTEM = `
+	You are Griff, a friendly griffin helping users stay focused.
+	You speak in first person (I, me, my), never third person. Do NOT address yourself as Griff.
+
+	This is CASUAL CHAT. Respond with plain text ONLY (no JSON).
+	Keep it very brief: 1-2 short sentences.
+	Do NOT mention blocking websites or adding sites.
+`;
+
+// ─── LLM Helper (runs in background to avoid CORS) ───
+const CLASSIFIER_SYSTEM = `
+	You are a strict classifier.
+	Return ONLY one word: FOCUS or CHAT.
+	FOCUS = user asks for help focusing, blocking distractions, studying, coding, productivity, goals.
+	CHAT = thanks, greetings, small talk, general conversation, questions about you.
+	No punctuation. No extra words.
+`;
+
+async function classifyMessage(userText) {
+	const fullPrompt = `${CLASSIFIER_SYSTEM}\n\nUser: ${userText}\nAnswer:`;
+	const raw = await askOllamaRaw(fullPrompt, { stop: ['\n'] });
+
+	const cleaned = (raw || '').trim().toUpperCase();
+	const firstToken = cleaned.split(/\s+/)[0].replace(/[^A-Z]/g, '');
+
+	console.log('🧠 Classifier raw:', raw);
+	console.log('🧠 Classifier token:', firstToken);
+
+	return firstToken === 'FOCUS' ? 'FOCUS' : 'CHAT';
+}
+
+function tryParseStrictJson(rawResponse) {
+	if (!rawResponse) return null;
+
+	const text = rawResponse.trim();
+
+	// Remove markdown fences if present
+	const cleaned = text
+		.replace(/^```json\s*/i, '')
+		.replace(/^```\s*/i, '')
+		.replace(/\s*```$/, '')
+		.trim();
+
+	// Find first JSON object by matching balanced braces
+	let depth = 0;
+	let start = -1;
+
+	for (let i = 0; i < cleaned.length; i++) {
+		if (cleaned[i] === '{') {
+			if (depth === 0) start = i;
+			depth++;
+		} else if (cleaned[i] === '}') {
+			depth--;
+			if (depth === 0 && start !== -1) {
+				const candidate = cleaned.slice(start, i + 1);
+				try {
+					return JSON.parse(candidate);
+				} catch {
+					return null;
+				}
+			}
+		}
+	}
+
+	return null;
+}
+
+async function respondToUser(userText) {
+	const mode = await classifyMessage(userText);
+
+	if (mode === 'CHAT') {
+		const raw = await askOllamaRaw(`${CHAT_SYSTEM}\n\nUser: ${userText}`);
+		return { type: 'chat', text: (raw || '').trim() };
+	}
+
+	// mode === "FOCUS"
+	const raw = await askOllamaRaw(`${FOCUS_SYSTEM}\n\nUser: ${userText}`);
+	const parsed = tryParseStrictJson(raw);
+	if (!parsed) {
+		return { type: 'chat', text: (raw || '').trim() };
+	}
+	return { type: 'focus', json: parsed };
+}
+
+async function askOllamaRaw(fullPrompt, options = {}) {
+	const modelName = LLM_CONFIG.phi.modelName || 'phi3:mini';
+	const response = await fetch(LLM_CONFIG.phi.endpoint, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({
+			model: modelName,
+			prompt: fullPrompt,
+			stream: false,
+			options
+		})
+	});
+	if (!response.ok) throw new Error(`HTTP ${response.status}`);
+	const data = await response.json();
+	return data.response;
+}
 
 let llmInitialized = false;
 
@@ -544,92 +691,53 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 			return true;
 		}
 
-		askOllama(msg.prompt)
-			.then((rawResponse) => {
-				console.log('🦅 Raw LLM response:', rawResponse);
+		console.log('🦅 LLM_ASK prompt:', msg.prompt);
 
-				try {
-					// Try to extract JSON from the response (find first complete JSON object)
-					const jsonMatch = rawResponse.match(/\{[\s\S]*?\}/);
-
-					if (jsonMatch) {
-						// Parse the JSON from the LLM
-						const parsed = JSON.parse(jsonMatch[0]);
-						console.log('✅ Parsed JSON:', parsed);
-
-						// Check if this is a focus request (has suggestions field)
-						if (parsed.suggestions && Array.isArray(parsed.suggestions)) {
-							// This is a focus request - handle site blocking
-							chrome.storage.local.get(['customSites', 'selectedCategories', 'customCategories'], (data) => {
-								const currentCustomSites = data.customSites || [];
-
-								// Filter out suggestions the user already has blocked
-								const newSites = parsed.suggestions.filter((site) => !currentCustomSites.includes(site));
-
-								if (newSites.length > 0) {
-									const updatedCustomSites = [...currentCustomSites, ...newSites];
-									const updatedBlacklist = buildBlocklist(
-										data.selectedCategories || [],
-										updatedCustomSites,
-										data.customCategories || []
-									);
-
-									// Save the new list automatically
-									chrome.storage.local.set({
-										customSites: updatedCustomSites,
-										blacklist: updatedBlacklist
-									});
-									console.log('✅ Added sites:', newSites);
-
-									// Create a custom message that includes the added sites
-									const siteList = newSites.join(', ');
-									const customMessage = `${parsed.message || "I've updated your blocked sites!"}\n\nI added these sites to help you focus: ${siteList}`;
-
-									// Send back the enhanced message
-									sendResponse({
-										response: customMessage,
-										addedSites: newSites
-									});
-								} else {
-									// No new sites added (user already has them all)
-									sendResponse({
-										response: `${parsed.message || 'Great!'} (You already have all these sites blocked!)`,
-										addedSites: []
-									});
-								}
-							});
-						} else {
-							// JSON exists but no suggestions - just general chat
-							// Extract the message field if it exists
-							const message = parsed.message || rawResponse;
-							sendResponse({ response: message });
-						}
-					} else {
-						// No JSON found - just send the raw response for general chat
-						console.log('⚠️ No JSON in response, sending raw text');
-						// Clean up any system prompt leakage
-						const cleanedResponse = rawResponse
-							.replace(/You are Eden.*?User:/s, '') // Remove Eden contamination
-							.replace(/You are Griff.*?User:/s, '') // Remove system prompt leakage
-							.trim();
-						sendResponse({ response: cleanedResponse || rawResponse });
-					}
-				} catch (e) {
-					console.error('❌ Failed to parse LLM response:', e, 'Raw:', rawResponse);
-					// Fallback - clean up and send raw response
-					const cleanedResponse = rawResponse
-						.replace(/You are Eden.*?User:/s, '')
-						.replace(/You are Griff.*?User:/s, '')
-						.replace(/```json/g, '')
-						.replace(/```/g, '')
-						.trim();
-					sendResponse({ response: cleanedResponse || rawResponse });
+		respondToUser(msg.prompt)
+			.then((result) => {
+				if (result.type === 'chat') {
+					console.log('🗨️ CHAT response:', result.text);
+					sendResponse({ response: result.text });
+					return;
 				}
+
+				// Focus result
+				const parsed = result.json;
+				console.log('🎯 FOCUS parsed JSON:', parsed);
+
+				chrome.storage.local.get(['customSites', 'selectedCategories', 'customCategories'], (data) => {
+					const currentCustomSites = data.customSites || [];
+					const suggestions = Array.isArray(parsed.suggestions) ? parsed.suggestions : [];
+
+					const newSites = suggestions.filter((site) => !currentCustomSites.includes(site));
+
+					if (newSites.length > 0) {
+						const updatedCustomSites = [...currentCustomSites, ...newSites];
+						const updatedBlacklist = buildBlocklist(data.selectedCategories || [], updatedCustomSites, data.customCategories || []);
+
+						chrome.storage.local.set({ customSites: updatedCustomSites, blacklist: updatedBlacklist });
+
+						console.log('✅ Added sites:', newSites);
+
+						const siteList = newSites.join(', ');
+						const customMessage =
+							`${parsed.message || "I've updated your blocked sites!"}\n\n` + `I added these sites to help you focus: ${siteList}`;
+
+						sendResponse({ response: customMessage, addedSites: newSites });
+					} else {
+						console.log('ℹ️ No new sites to add');
+						sendResponse({
+							response: `${parsed.message || 'Great!'} (You already have all these sites blocked!)`,
+							addedSites: []
+						});
+					}
+				});
 			})
 			.catch((error) => {
 				console.error('❌ Ollama request error:', error);
 				sendResponse({ error: error.message });
 			});
+
 		return true;
 	}
 });
