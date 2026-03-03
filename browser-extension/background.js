@@ -163,7 +163,7 @@ const LLM_CONFIG = {
 			{
 			"intent": "what the user wants to focus on",
 			"suggestions": ["youtube.com", "reddit.com", "instagram.com"],
-			"message": "A short encouraging messBaage from Griff"
+			"message": "A short encouraging message from Griff"
 			}
 
 			Rules:
@@ -580,13 +580,23 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 										blacklist: updatedBlacklist
 									});
 									console.log('✅ Added sites:', newSites);
-								}
 
-								// Send back just the message (not the whole JSON)
-								sendResponse({
-									response: parsed.message || "I've updated your blocked sites!",
-									addedSites: newSites
-								});
+									// Create a custom message that includes the added sites
+									const siteList = newSites.join(', ');
+									const customMessage = `${parsed.message || "I've updated your blocked sites!"}\n\nI added these sites to help you focus: ${siteList}`;
+
+									// Send back the enhanced message
+									sendResponse({
+										response: customMessage,
+										addedSites: newSites
+									});
+								} else {
+									// No new sites added (user already has them all)
+									sendResponse({
+										response: `${parsed.message || 'Great!'} (You already have all these sites blocked!)`,
+										addedSites: []
+									});
+								}
 							});
 						} else {
 							// JSON exists but no suggestions - just general chat
