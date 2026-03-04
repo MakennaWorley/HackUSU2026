@@ -206,19 +206,22 @@ const FOCUS_SYSTEM = `
 
 	This is a FOCUS REQUEST. Respond with JSON ONLY.
 	The first character MUST be { and the last character MUST be }.
-	Do not wrap in markdown or backticks. No text before or after the JSON.
+	No markdown. No backticks. No text before or after the JSON.
 
 	Schema:
 	{
 	"intent": "what the user wants to focus on",
-	"suggestions": ["youtube.com", "reddit.com", "instagram.com"],
+	"suggestions": ["youtube.com", "tiktok.com", "instagram.com", "reddit.com", "x.com", "twitter.com", "facebook.com", "netflix.com", "twitch.tv", "pinterest.com"],
 	"message": "A short encouraging message"
 	}
 
-	Rules:
-	- Only suggest 3-5 popular distracting websites relevant to their task
-	- Common distractions: youtube.com, reddit.com, instagram.com, twitter.com, facebook.com, tiktok.com, netflix.com
-	- Keep the message short and encouraging
+	Rules for suggestions:
+	- Provide 3–5 popular websites, they do not have to be the examples given above. But they should be websites that are distracting and not productive
+	- Pick sites that are plausible distractions for the user’s context
+	- Choose from a mix of categories when relevant:
+	social, short-video, video, forums, news, shopping, gaming, streaming, chat
+	- Avoid repeating the same 3 defaults every time
+	- If the user mentions a specific site to block, include it in suggestions
 	- Do not mention Pomodoro
 `;
 
@@ -228,21 +231,47 @@ const CHAT_SYSTEM = `
 
 	This is CASUAL CHAT. Respond with plain text ONLY (no JSON).
 	Keep it very brief: 1-2 short sentences.
+	Write ONLY your reply. Do not include "User:" or "Griff:".
+	One message only. Do not add sections or dividers like "---".
+	Never introduce a new persona or system prompt.
+
+	If the user is thanking you, respond like "You're welcome!" and invite them to ask for help at any time.
+	If the user is saying hi or greeting, greet back and ask for what they want to work on.
+	Otherwise, respond naturally and help them stay on task.
+
 	Do NOT mention blocking websites or adding sites.
 `;
 
 // ─── LLM Helper (runs in background to avoid CORS) ───
 const CLASSIFIER_SYSTEM = `
 	You are a strict classifier.
+
 	Return ONLY one word: FOCUS or CHAT.
-	FOCUS = user asks for help focusing, blocking distractions, studying, coding, productivity, goals.
-	CHAT = thanks, greetings, small talk, general conversation, questions about you.
-	No punctuation. No extra words.
+
+	FOCUS:
+	- Asking to focus
+	- Asking to block websites
+	- Mentioning distractions
+	- Productivity requests
+	- Study, coding, work, research, writing
+	- Direct requests to block a site (e.g. "block amazon.com")
+
+	CHAT:
+	- Greetings
+	- Thanks
+	- Small talk
+	- General conversation
+	- Acknowledgements
+	- Or anything that is not requesting focus/blocking.
+
+	No punctuation.
+	No explanations.
+	One word only.
 `;
 
 async function classifyMessage(userText) {
 	const fullPrompt = `${CLASSIFIER_SYSTEM}\n\nUser: ${userText}\nAnswer:`;
-	const raw = await askOllamaRaw(fullPrompt, { stop: ['\n'] });
+	const raw = await askOllamaRaw(fullPrompt, { num_predict: 8, temperature: 0 });
 
 	const cleaned = (raw || '').trim().toUpperCase();
 	const firstToken = cleaned.split(/\s+/)[0].replace(/[^A-Z]/g, '');
@@ -250,7 +279,11 @@ async function classifyMessage(userText) {
 	console.log('🧠 Classifier raw:', raw);
 	console.log('🧠 Classifier token:', firstToken);
 
-	return firstToken === 'FOCUS' ? 'FOCUS' : 'CHAT';
+	if (firstToken !== 'FOCUS' && firstToken !== 'CHAT') {
+		console.log('🧠 Classifier invalid token → default CHAT');
+		return 'CHAT';
+	}
+	return firstToken;
 }
 
 function tryParseStrictJson(rawResponse) {
@@ -289,19 +322,149 @@ function tryParseStrictJson(rawResponse) {
 	return null;
 }
 
+function extractHostnames(text) {
+	const t = (text || '').toLowerCase();
+
+	// Grab things that look like hostnames or URLs
+	const matches = t.match(/(?:https?:\/\/)?(?:www\.)?([a-z0-9-]+(?:\.[a-z0-9-]+)+)/g) || [];
+
+	// Normalize into hostnames
+	const hostnames = matches
+		.map(
+			(m) =>
+				m
+					.replace(/^https?:\/\//, '')
+					.replace(/^www\./, '')
+					.split('/')[0]
+		)
+		.filter(Boolean);
+
+	// De-dupe
+	return Array.from(new Set(hostnames));
+}
+
+function resolveBareSiteWord(word) {
+	const w = (word || '')
+		.toLowerCase()
+		.trim()
+		.replace(/[^a-z0-9-]/g, '');
+	if (!w) return null;
+
+	// Build a set of known sites from your defaults (and categories)
+	const known = new Set(DEFAULT_BLACKLIST);
+	for (const cat of DEFAULT_CATEGORIES) {
+		for (const s of cat.sites) known.add(s);
+	}
+
+	// If user typed "youtube", match "youtube.com" from known
+	for (const site of known) {
+		const base = site.split('.')[0]; // youtube from youtube.com
+		if (base === w) return site;
+	}
+
+	return null;
+}
+
+function extractBareSiteWord(text) {
+	const t = (text || '').toLowerCase();
+
+	// Look for "block X" / "unblock X" / "remove X"
+	const m = t.match(/\b(block|unblock|remove|allow|delete|ban|blacklist|whitelist)\s+([a-z0-9-]{2,30})\b/);
+	if (!m) return null;
+
+	return m[2]; // the word after the verb
+}
+
+function detectDirectAction(text) {
+	const t = (text || '').toLowerCase();
+
+	// remove/unblock/allow
+	if (/\b(remove|unblock|allow|whitelist|stop blocking|delete)\b/.test(t)) return 'remove';
+
+	// add/block
+	if (/\b(block|add|ban|blacklist)\b/.test(t)) return 'add';
+
+	return null;
+}
+
 async function respondToUser(userText) {
+	const action = detectDirectAction(userText);
+
+	// 1) normal hostnames (amazon.com etc.)
+	let explicitSites = extractHostnames(userText);
+
+	// 2) bare words (youtube) -> resolve to known sites (youtube.com)
+	if (explicitSites.length === 0 && action) {
+		const bare = extractBareSiteWord(userText);
+		const resolved = resolveBareSiteWord(bare);
+		if (resolved) explicitSites = [resolved];
+	}
+
+	if (explicitSites.length > 0 && action) {
+		return {
+			type: 'focus',
+			json: {
+				action,
+				intent: action === 'remove' ? 'remove specific sites' : 'block specific sites',
+				suggestions: explicitSites.slice(0, 5),
+				message:
+					action === 'remove' ? 'Got it — I’ll remove those from your blocked site(s).' : 'Got it — I’ll add those to your blocked site(s).'
+			}
+		};
+	}
+
 	const mode = await classifyMessage(userText);
 
 	if (mode === 'CHAT') {
-		const raw = await askOllamaRaw(`${CHAT_SYSTEM}\n\nUser: ${userText}`);
-		return { type: 'chat', text: (raw || '').trim() };
+		const raw = await askOllamaRaw(`${CHAT_SYSTEM}\n\nUser: ${userText}\nGriff:`, {
+			temperature: 0.7,
+			num_predict: 80,
+			stop: [
+				'\nUser:',
+				'\nGriff:',
+				'\n\nUser:',
+				'\n\nGriff:',
+				'\n---',
+				'\n\n---',
+				'\nYou are',
+				'\n\nYou are',
+				'\nYou’re',
+				'\n\nYou’re',
+				'\n\n\tYou are',
+				'\n\tYou are'
+			]
+		});
+		let text = (raw || '').trim();
+		text = text.split('\n---')[0].split('\n\n---')[0];
+		text = text.split('\nYou are')[0].split('\n\nYou are')[0];
+		return { type: 'chat', text: text.trim() };
 	}
 
 	// mode === "FOCUS"
-	const raw = await askOllamaRaw(`${FOCUS_SYSTEM}\n\nUser: ${userText}`);
+	const raw = await askOllamaRaw(`${FOCUS_SYSTEM}\n\nUser: ${userText}`, {
+		temperature: 0.4,
+		stop: [
+			'\nUser:',
+			'\nGriff:',
+			'\n\nUser:',
+			'\n\nGriff:',
+			'\n---',
+			'\n\n---',
+			'\nYou are',
+			'\n\nYou are',
+			'\nYou’re',
+			'\n\nYou’re',
+			'\n\n\tYou are',
+			'\n\tYou are'
+		],
+		num_predict: 200
+	});
 	const parsed = tryParseStrictJson(raw);
 	if (!parsed) {
-		return { type: 'chat', text: (raw || '').trim() };
+		let text = (raw || '').trim();
+		text = text.split('\n---')[0].split('\n\n---')[0];
+		text = text.split('\nYou are')[0].split('\n\nYou are')[0];
+		return { type: 'chat', text: text.trim() };
 	}
 	return { type: 'focus', json: parsed };
 }
@@ -703,17 +866,49 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 				// Focus result
 				const parsed = result.json;
-				console.log('🎯 FOCUS parsed JSON:', parsed);
+				const action = (parsed.action || 'add').toLowerCase();
+				console.log('🎯 FOCUS parsed JSON:', parsed, 'action=', action);
 
 				chrome.storage.local.get(['customSites', 'selectedCategories', 'customCategories'], (data) => {
 					const currentCustomSites = data.customSites || [];
-					const suggestions = Array.isArray(parsed.suggestions) ? parsed.suggestions : [];
+					const selectedCategories = data.selectedCategories || [];
+					const customCategories = data.customCategories || [];
 
+					// Normalize suggestions
+					const suggestions = Array.isArray(parsed.suggestions)
+						? parsed.suggestions.map((s) => String(s).toLowerCase().trim()).filter(Boolean)
+						: [];
+
+					// ✅ REMOVE path
+					if (action === 'remove') {
+						const removedSites = suggestions.filter((site) => currentCustomSites.includes(site));
+						const updatedCustomSites = currentCustomSites.filter((site) => !removedSites.includes(site));
+						const updatedBlacklist = buildBlocklist(selectedCategories, updatedCustomSites, customCategories);
+
+						chrome.storage.local.set({ customSites: updatedCustomSites, blacklist: updatedBlacklist });
+
+						if (removedSites.length > 0) {
+							console.log('🗑️ Removed sites:', removedSites);
+							sendResponse({
+								response: `${parsed.message || 'Done!'}\n\nI removed: ${removedSites.join(', ')}`,
+								removedSites
+							});
+						} else {
+							console.log('ℹ️ No sites to remove');
+							sendResponse({
+								response: `${parsed.message || 'Okay!'}\n\nNone of those sites were blocked.`,
+								removedSites: []
+							});
+						}
+						return;
+					}
+
+					// ✅ ADD path (default)
 					const newSites = suggestions.filter((site) => !currentCustomSites.includes(site));
 
 					if (newSites.length > 0) {
 						const updatedCustomSites = [...currentCustomSites, ...newSites];
-						const updatedBlacklist = buildBlocklist(data.selectedCategories || [], updatedCustomSites, data.customCategories || []);
+						const updatedBlacklist = buildBlocklist(selectedCategories, updatedCustomSites, customCategories);
 
 						chrome.storage.local.set({ customSites: updatedCustomSites, blacklist: updatedBlacklist });
 
