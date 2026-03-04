@@ -276,11 +276,7 @@ async function classifyMessage(userText) {
 	const cleaned = (raw || '').trim().toUpperCase();
 	const firstToken = cleaned.split(/\s+/)[0].replace(/[^A-Z]/g, '');
 
-	console.log('🧠 Classifier raw:', raw);
-	console.log('🧠 Classifier token:', firstToken);
-
 	if (firstToken !== 'FOCUS' && firstToken !== 'CHAT') {
-		console.log('🧠 Classifier invalid token → default CHAT');
 		return 'CHAT';
 	}
 	return firstToken;
@@ -514,7 +510,6 @@ async function detectOllama() {
 			if (foundModel) {
 				LLM_CONFIG.phi.modelName = foundModel;
 				LLM_CONFIG.phi.available = true;
-				console.log('✅ Ollama detected with model:', foundModel);
 				return true;
 			}
 		}
@@ -538,13 +533,12 @@ async function detectOllama() {
 				if (testResponse.ok) {
 					LLM_CONFIG.phi.modelName = modelName;
 					LLM_CONFIG.phi.available = true;
-					console.log('✅ Ollama detected with model:', modelName);
 					return true;
 				}
 			} catch {}
 		}
 	} catch (error) {
-		console.log('❌ Ollama not detected:', error.message);
+		sendResponse({ error: error.message });
 	}
 	return false;
 }
@@ -573,14 +567,6 @@ async function askOllama(prompt) {
 		throw error;
 	}
 }
-
-// Initialize LLM on startup
-detectOllama().then((success) => {
-	llmInitialized = true;
-	if (success) {
-		console.log('🦅 Griff is ready to chat!');
-	}
-});
 
 // ─── Message handling from popup & content scripts ───
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -854,12 +840,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 			return true;
 		}
 
-		console.log('🦅 LLM_ASK prompt:', msg.prompt);
-
 		respondToUser(msg.prompt)
 			.then((result) => {
 				if (result.type === 'chat') {
-					console.log('🗨️ CHAT response:', result.text);
 					sendResponse({ response: result.text });
 					return;
 				}
@@ -867,7 +850,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 				// Focus result
 				const parsed = result.json;
 				const action = (parsed.action || 'add').toLowerCase();
-				console.log('🎯 FOCUS parsed JSON:', parsed, 'action=', action);
 
 				chrome.storage.local.get(['customSites', 'selectedCategories', 'customCategories'], (data) => {
 					const currentCustomSites = data.customSites || [];
@@ -879,7 +861,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 						? parsed.suggestions.map((s) => String(s).toLowerCase().trim()).filter(Boolean)
 						: [];
 
-					// ✅ REMOVE path
+					// REMOVE path
 					if (action === 'remove') {
 						const removedSites = suggestions.filter((site) => currentCustomSites.includes(site));
 						const updatedCustomSites = currentCustomSites.filter((site) => !removedSites.includes(site));
@@ -888,13 +870,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 						chrome.storage.local.set({ customSites: updatedCustomSites, blacklist: updatedBlacklist });
 
 						if (removedSites.length > 0) {
-							console.log('🗑️ Removed sites:', removedSites);
 							sendResponse({
 								response: `${parsed.message || 'Done!'}\n\nI removed: ${removedSites.join(', ')}`,
 								removedSites
 							});
 						} else {
-							console.log('ℹ️ No sites to remove');
 							sendResponse({
 								response: `${parsed.message || 'Okay!'}\n\nNone of those sites were blocked.`,
 								removedSites: []
@@ -912,15 +892,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 						chrome.storage.local.set({ customSites: updatedCustomSites, blacklist: updatedBlacklist });
 
-						console.log('✅ Added sites:', newSites);
-
 						const siteList = newSites.join(', ');
 						const customMessage =
 							`${parsed.message || "I've updated your blocked sites!"}\n\n` + `I added these sites to help you focus: ${siteList}`;
 
 						sendResponse({ response: customMessage, addedSites: newSites });
 					} else {
-						console.log('ℹ️ No new sites to add');
 						sendResponse({
 							response: `${parsed.message || 'Great!'} (You already have all these sites blocked!)`,
 							addedSites: []
@@ -929,7 +906,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 				});
 			})
 			.catch((error) => {
-				console.error('❌ Ollama request error:', error);
 				sendResponse({ error: error.message });
 			});
 
