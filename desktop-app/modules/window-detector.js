@@ -41,7 +41,7 @@ class WindowDetector extends EventEmitter {
 			this._processOutput();
 		});
 
-		this.psProcess.stderr.on('data', (data) => {
+		this.psProcess.stderr.on('data', (_data) => {
 			// Ignore stderr noise from PowerShell
 		});
 
@@ -55,11 +55,14 @@ class WindowDetector extends EventEmitter {
 		});
 
 		// Register the Win32 type once (must be a single line for stdin)
-		const addTypeCmd = "Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; using System.Text; public class GriffWin32 { [DllImport(\"user32.dll\")] public static extern IntPtr GetForegroundWindow(); [DllImport(\"user32.dll\")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId); [DllImport(\"user32.dll\", CharSet=CharSet.Auto)] public static extern int GetWindowText(IntPtr hWnd, StringBuilder sb, int count); }'";
+		const addTypeCmd =
+			'Add-Type -TypeDefinition \'using System; using System.Runtime.InteropServices; using System.Text; public class GriffWin32 { [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow(); [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId); [DllImport("user32.dll", CharSet=CharSet.Auto)] public static extern int GetWindowText(IntPtr hWnd, StringBuilder sb, int count); }\'';
 
-		this.psProcess.stdin.write(addTypeCmd + '\n');
+		this.psProcess.stdin.write(`${addTypeCmd}\n`);
 		// Wait for Add-Type to compile before marking as initialized
-		setTimeout(() => { this.initialized = true; }, 2000);
+		setTimeout(() => {
+			this.initialized = true;
+		}, 2000);
 	}
 
 	_killPowerShell() {
@@ -85,11 +88,11 @@ class WindowDetector extends EventEmitter {
 			'$p=Get-Process -Id $wpid -ErrorAction SilentlyContinue;',
 			'$t=New-Object System.Text.StringBuilder 256;',
 			'[void][GriffWin32]::GetWindowText($h,$t,256);',
-			"Write-Output \"GRIFF_RESULT:$($p.ProcessName)|$($t.ToString())\""
+			'Write-Output "GRIFF_RESULT:$($p.ProcessName)|$($t.ToString())"'
 		].join(' ');
 
 		try {
-			this.psProcess.stdin.write(cmd + '\n');
+			this.psProcess.stdin.write(`${cmd}\n`);
 		} catch {
 			// stdin may be closed, respawn will handle it
 		}

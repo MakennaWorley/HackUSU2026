@@ -153,7 +153,7 @@ function pad(n) {
 btnStart.addEventListener('click', async () => {
 	const duration = parseInt(durationInput.value, 10) || 25;
 	const res = await window.griff.startFocus(duration);
-	if (res && res.ok) showActiveState(res.focusEnd);
+	if (res?.ok) showActiveState(res.focusEnd);
 });
 
 btnStop.addEventListener('click', async () => {
@@ -208,7 +208,7 @@ btnAddCategory.addEventListener('click', async () => {
 		.filter(Boolean);
 
 	const res = await window.griff.addCategory({ id, name, description: description || name, apps, type });
-	if (res && res.ok) {
+	if (res?.ok) {
 		categoryNameInput.value = '';
 		categoryDescInput.value = '';
 		categoryAppsInput.value = '';
@@ -221,7 +221,7 @@ btnAddCategory.addEventListener('click', async () => {
 async function deleteCategory(categoryId) {
 	if (!confirm('Are you sure you want to delete this category?')) return;
 	const res = await window.griff.deleteCategory(categoryId);
-	if (res && res.ok) loadStatus();
+	if (res?.ok) loadStatus();
 }
 
 // ─── IPC Events from main process ───

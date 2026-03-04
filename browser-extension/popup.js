@@ -146,7 +146,7 @@ function pad(n) {
 btnStart.addEventListener('click', () => {
 	const duration = parseInt(durationInput.value, 10) || 25;
 	chrome.runtime.sendMessage({ type: 'START_FOCUS', duration }, (res) => {
-		if (res && res.ok) showActiveState(res.end);
+		if (res?.ok) showActiveState(res.end);
 	});
 });
 
@@ -196,7 +196,7 @@ btnReset.addEventListener('click', () => {
 	}
 
 	chrome.runtime.sendMessage({ type: 'RESET_TO_DEFAULTS' }, (res) => {
-		if (res && res.ok) {
+		if (res?.ok) {
 			// Show success message
 			resetMsg.classList.remove('hidden');
 			setTimeout(() => resetMsg.classList.add('hidden'), 2000);
@@ -242,7 +242,7 @@ btnAddCategory.addEventListener('click', () => {
 
 	// Send to background to save
 	chrome.runtime.sendMessage({ type: 'ADD_CATEGORY', category: newCategory }, (res) => {
-		if (res && res.ok) {
+		if (res?.ok) {
 			// Clear form
 			categoryNameInput.value = '';
 			categoryDescInput.value = '';
@@ -262,7 +262,7 @@ function deleteCategory(categoryId, isCustom) {
 		return;
 	}
 	chrome.runtime.sendMessage({ type: 'DELETE_CATEGORY', categoryId, isCustom }, (res) => {
-		if (res && res.ok) {
+		if (res?.ok) {
 			loadStatus();
 		}
 	});

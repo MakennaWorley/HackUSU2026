@@ -1,28 +1,28 @@
 (() => {
 	// Prevent double-injection
-	if (window.__griffinFocusInjected) return;
-	window.__griffinFocusInjected = true;
+	if (window.__GriffFocusInjected) return;
+	window.__GriffFocusInjected = true;
 
-	const GRIFFIN_IMG = chrome.runtime.getURL('assets/griff.png');
+	const Griff_IMG = chrome.runtime.getURL('assets/griff.png');
 
-	// ─── Warning messages the griffin can say ───
+	// ─── Warning messages the Griff can say ───
 	const ANGRY_MESSAGES = [
-        'Hey there—remember what you meant to focus on.',
-        'A gentle reminder: your task is waiting.',
-        "Let's return to your work—you've got this.",
-        "This doesn't seem part of your current plan.",
-        'I believe you intended to stay on task.',
-        'The griffin suggests returning to your objective.',
-        "I'm keeping watch—shall we head back?",
-        'SQUAWK! A small detour—time to refocus.',
-        'Just checking in—ready to continue?',
-        "Focus mode is active—let's honor that commitment.",
-        'The griffin encourages you to continue your quest.'
-    ];
+		'Hey there—remember what you meant to focus on.',
+		'A gentle reminder: your task is waiting.',
+		"Let's return to your work—you've got this.",
+		"This doesn't seem part of your current plan.",
+		'I believe you intended to stay on task.',
+		'The Griff suggests returning to your objective.',
+		"I'm keeping watch—shall we head back?",
+		'SQUAWK! A small detour—time to refocus.',
+		'Just checking in—ready to continue?',
+		"Focus mode is active—let's honor that commitment.",
+		'The Griff encourages you to continue your quest.'
+	];
 
-	let griffinEl = null;
+	let GriffEl = null;
 	let speechBubble = null;
-	let countdownEl = null;
+	let _countdownEl = null;
 	let warningTimeout = null;
 	let countdownInterval = null;
 	let isBlocked = false;
@@ -38,54 +38,54 @@
 	let clickCount = 0;
 	let clickResetTimeout = null;
 
-	// ─── Create the floating griffin ───
-	function createGriffin() {
-		if (griffinEl) return;
-		// Ensure body exists before creating griffin
+	// ─── Create the floating Griff ───
+	function createGriff() {
+		if (GriffEl) return;
+		// Ensure body exists before creating Griff
 		if (!document.body) {
 			// Wait for body to be available
 			if (document.readyState === 'loading') {
-				document.addEventListener('DOMContentLoaded', createGriffin, { once: true });
+				document.addEventListener('DOMContentLoaded', createGriff, { once: true });
 			}
 			return;
 		}
 
-		griffinEl = document.createElement('div');
-		griffinEl.id = 'griffin-focus-container';
+		GriffEl = document.createElement('div');
+		GriffEl.id = 'Griff-focus-container';
 
 		const img = document.createElement('img');
-		img.src = GRIFFIN_IMG;
-		img.id = 'griffin-focus-img';
+		img.src = Griff_IMG;
+		img.id = 'Griff-focus-img';
 		img.draggable = false;
 
 		speechBubble = document.createElement('div');
-		speechBubble.id = 'griffin-speech-bubble';
-		speechBubble.classList.add('griffin-hidden');
+		speechBubble.id = 'Griff-speech-bubble';
+		speechBubble.classList.add('Griff-hidden');
 
-		griffinEl.appendChild(speechBubble);
-		griffinEl.appendChild(img);
-		document.body.appendChild(griffinEl);
+		GriffEl.appendChild(speechBubble);
+		GriffEl.appendChild(img);
+		document.body.appendChild(GriffEl);
 
 		// Position at bottom and start wandering
-		griffinEl.style.position = 'fixed';
-		griffinEl.style.bottom = '20px';
-		griffinEl.style.left = '50px';
+		GriffEl.style.position = 'fixed';
+		GriffEl.style.bottom = '20px';
+		GriffEl.style.left = '50px';
 		currentX = 50;
 		currentY = window.innerHeight - 100;
 		targetY = window.innerHeight - 100;
 		startWandering();
 
 		// Make draggable
-		griffinEl.addEventListener('mousedown', startDrag);
+		GriffEl.addEventListener('mousedown', startDrag);
 		document.addEventListener('mousemove', onDrag);
 		document.addEventListener('mouseup', endDrag);
-		
+
 		// Open chat on triple-click (if not dragging)
-		griffinEl.addEventListener('click', (e) => {
+		GriffEl.addEventListener('click', () => {
 			if (isDragging) return;
 
 			clickCount++;
-			
+
 			// Reset click count after 2 seconds of inactivity
 			if (clickResetTimeout) clearTimeout(clickResetTimeout);
 			clickResetTimeout = setTimeout(() => {
@@ -101,14 +101,14 @@
 		});
 	}
 
-	function removeGriffin() {
+	function removeGriff() {
 		clearTimers();
 		stopWandering();
-		if (griffinEl) {
-			griffinEl.remove();
-			griffinEl = null;
+		if (GriffEl) {
+			GriffEl.remove();
+			GriffEl = null;
 			speechBubble = null;
-			countdownEl = null;
+			_countdownEl = null;
 		}
 		if (clickResetTimeout) {
 			clearTimeout(clickResetTimeout);
@@ -122,10 +122,10 @@
 	function startDrag(e) {
 		isDragging = true;
 		stopWandering();
-		const rect = griffinEl.getBoundingClientRect();
+		const rect = GriffEl.getBoundingClientRect();
 		dragOffset.x = e.clientX - rect.left;
 		dragOffset.y = e.clientY - rect.top;
-		griffinEl.style.transition = 'none';
+		GriffEl.style.transition = 'none';
 
 		// Track drag count for detecting harassment
 		dragCount++;
@@ -143,29 +143,28 @@
 		}
 	}
 	function onDrag(e) {
-		if (!isDragging || !griffinEl) return;
+		if (!isDragging || !GriffEl) return;
 		const newX = e.clientX - dragOffset.x;
 		const newY = e.clientY - dragOffset.y;
 		const minX = 0;
 		const maxX = window.innerWidth - 80;
-		const maxY = window.innerHeight - 50;
 		currentX = Math.max(minX, Math.min(newX, maxX));
 		currentY = newY;
-		griffinEl.style.left = currentX + 'px';
-		griffinEl.style.top = currentY + 'px';
-		griffinEl.style.right = 'auto';
-		griffinEl.style.bottom = 'auto';
+		GriffEl.style.left = `${currentX}px`;
+		GriffEl.style.top = `${currentY}px`;
+		GriffEl.style.right = 'auto';
+		GriffEl.style.bottom = 'auto';
 	}
 	function endDrag() {
 		isDragging = false;
-		if (griffinEl) {
-			griffinEl.style.transition = 'top 1.6s ease-out, left 0.15s ease-out';
+		if (GriffEl) {
+			GriffEl.style.transition = 'top 1.6s ease-out, left 0.15s ease-out';
 			if (currentY < window.innerHeight - 150) {
 				targetY = window.innerHeight - 100;
 			} else {
 				targetY = window.innerHeight - 100;
 			}
-			griffinEl.style.top = targetY + 'px';
+			GriffEl.style.top = `${targetY}px`;
 			currentY = targetY;
 		}
 		setTimeout(startWandering, 600);
@@ -173,15 +172,15 @@
 
 	// ─── Angry mode ───
 	function goAngry() {
-		if (!griffinEl) return;
+		if (!GriffEl) return;
 		isBlocked = true;
 
-		griffinEl.classList.add('griffin-angry');
+		GriffEl.classList.add('Griff-angry');
 
 		// Show speech bubble with random message
 		const msg = ANGRY_MESSAGES[Math.floor(Math.random() * ANGRY_MESSAGES.length)];
 		speechBubble.textContent = msg;
-		speechBubble.classList.remove('griffin-hidden');
+		speechBubble.classList.remove('Griff-hidden');
 
 		// Start 10-second countdown timer
 		let seconds = 10;
@@ -194,36 +193,36 @@
 			} else {
 				// Intensify shaking at lower counts
 				if (seconds <= 3) {
-					griffinEl.classList.add('griffin-rage');
+					GriffEl.classList.add('Griff-rage');
 				}
 			}
 		}, 1000);
 	}
 
 	function goAngryNoClose() {
-		if (!griffinEl) return;
+		if (!GriffEl) return;
 
-		griffinEl.classList.add('griffin-angry');
+		GriffEl.classList.add('Griff-angry');
 
 		// Show speech bubble with random message
 		const msg = ANGRY_MESSAGES[Math.floor((Math.random() * ANGRY_MESSAGES.length) / 2)];
 		speechBubble.textContent = msg;
-		speechBubble.classList.remove('griffin-hidden');
+		speechBubble.classList.remove('Griff-hidden');
 
 		// Shake for 2 seconds then calm down
-		griffinEl.classList.add('griffin-rage');
+		GriffEl.classList.add('Griff-rage');
 		warningTimeout = setTimeout(() => {
 			goCalm();
 		}, 2000);
 	}
 
 	function goCalm() {
-		if (!griffinEl) return;
+		if (!GriffEl) return;
 		isBlocked = false;
 		clearTimers();
 
-		griffinEl.classList.remove('griffin-angry', 'griffin-rage');
-		speechBubble.classList.add('griffin-hidden');
+		GriffEl.classList.remove('Griff-angry', 'Griff-rage');
+		speechBubble.classList.add('Griff-hidden');
 	}
 
 	function clearTimers() {
@@ -245,14 +244,14 @@
 	function startWandering() {
 		if (wanderInterval || isDragging) return;
 		wanderInterval = setInterval(() => {
-			if (isDragging || !griffinEl) return;
+			if (isDragging || !GriffEl) return;
 			const moveAmount = (Math.random() - 0.5) * 80;
 			const newX = currentX + moveAmount;
 			const minX = 0;
 			const maxX = window.innerWidth - 80;
 			currentX = Math.max(minX, Math.min(newX, maxX));
-			griffinEl.style.transition = 'left 0.8s ease-in-out';
-			griffinEl.style.left = currentX + 'px';
+			GriffEl.style.transition = 'left 0.8s ease-in-out';
+			GriffEl.style.left = `${currentX}px`;
 		}, 2000);
 	}
 
@@ -265,8 +264,8 @@
 
 	function closeTab() {
 		// Dramatic exit animation then ask background to close
-		if (griffinEl) {
-			griffinEl.classList.add('griffin-swipe');
+		if (GriffEl) {
+			GriffEl.classList.add('Griff-swipe');
 		}
 		setTimeout(() => {
 			chrome.runtime.sendMessage({ type: 'CLOSE_TAB' });
@@ -288,21 +287,21 @@
 			if (response.focusActive) {
 				if (response.blocked) {
 					// Always enforce blocked sites, even when desktop app is active
-					createGriffin();
+					createGriff();
 					if (!isBlocked) {
 						goAngry();
 					}
 				} else if (desktopAppActive) {
-					// Desktop overlay handles the calm/idle griffin
-					removeGriffin();
+					// Desktop overlay handles the calm/idle Griff
+					removeGriff();
 				} else {
-					createGriffin();
+					createGriff();
 					if (isBlocked) {
 						goCalm();
 					}
 				}
 			} else {
-				removeGriffin();
+				removeGriff();
 			}
 		});
 	}
@@ -313,50 +312,64 @@
 			checkCurrentSite();
 		}
 		if (msg.type === 'FOCUS_ENDED') {
-			removeGriffin();
+			removeGriff();
 		}
 		if (msg.type === 'DESKTOP_APP_STATE') {
 			desktopAppActive = msg.state.running && msg.state.focusActive;
-			// Re-check: keeps angry griffin on blocked sites, removes calm griffin
+			// Re-check: keeps angry Griff on blocked sites, removes calm Griff
 			checkCurrentSite();
 		}
 	});
 
-	// ─── LLM Integration ───
+	// ─── LLM Integration (via background script to avoid CORS) ───
 	async function getAIResponse(prompt) {
-		try {
-			// Ensure LLM manager is initialized
-			if (!llmManager.initialized) {
-				await llmManager.init();
-			}
-
-			// Get response from best available model
-			const response = await llmManager.ask(prompt);
-			return response;
-		} catch (error) {
-			console.error('❌ AI response failed:', error);
-			return null;
-		}
+		return new Promise((resolve) => {
+			chrome.runtime.sendMessage({ type: 'LLM_ASK', prompt }, (response) => {
+				if (chrome.runtime.lastError) {
+					console.error('❌ AI request failed:', chrome.runtime.lastError);
+					resolve(null);
+					return;
+				}
+				if (response.error) {
+					console.error('❌ AI response error:', response.error);
+					resolve(null);
+				} else {
+					resolve(response.response);
+				}
+			});
+		});
 	}
 
 	async function getAIStatus() {
-		if (!llmManager.initialized) {
-			await llmManager.init();
-		}
-		return llmManager.getStatus();
+		return new Promise((resolve) => {
+			chrome.runtime.sendMessage({ type: 'LLM_INIT' }, (response) => {
+				if (chrome.runtime.lastError) {
+					resolve({
+						availableModels: [],
+						currentModel: 'None'
+					});
+					return;
+				}
+				const availableModels = response.available ? [response.modelDisplayName] : [];
+				resolve({
+					availableModels,
+					currentModel: response.available ? response.modelDisplayName : 'None'
+				});
+			});
+		});
 	}
 
 	// ─── Chat Interface ───
 	function openChat() {
-		if (window.griffinChatOpen) return;
-		window.griffinChatOpen = true;
+		if (window.GriffChatOpen) return;
+		window.GriffChatOpen = true;
 
 		// Create chat container from HTML string
 		const chatHTML = `
 			<div id="chat-container">
 				<div id="chat-header">
 					<div id="chat-title">
-						<img src="${GRIFFIN_IMG}" alt="Griffin" id="chat-icon">
+						<img src="${Griff_IMG}" alt="Griff" id="chat-icon">
 						<span>Chat with Griff</span>
 					</div>
 					<button id="chat-close" aria-label="Close chat">×</button>
@@ -390,9 +403,6 @@
 		setupChatListeners(chatContainer);
 
 		// Request LLM status
-		const chatMessages = chatContainer.querySelector('#chat-messages');
-		const statusIndicator = chatContainer.querySelector('#status-indicator');
-		const statusText = chatContainer.querySelector('#status-text');
 		const chatInput = chatContainer.querySelector('#chat-input');
 		const chatSend = chatContainer.querySelector('#chat-send');
 
@@ -410,10 +420,27 @@
 
 					// Get AI response
 					getAIResponse(prompt).then((response) => {
+						// Remove loading message
+						const loadingMessages = chatContainer.querySelectorAll('.loading-message');
+						for (const msg of loadingMessages) {
+							msg.remove();
+						}
+
 						if (response) {
-							addChatMessage(chatContainer, response, 'griffin');
+							// Clean up response - remove any markdown code blocks or JSON formatting
+							const cleanedResponse = response
+								.replace(/```json\s*/g, '')
+								.replace(/```\s*/g, '')
+								.trim();
+
+							// If the response looks like JSON, don't display it
+							if (cleanedResponse.startsWith('{') && cleanedResponse.endsWith('}')) {
+								addChatMessage(chatContainer, "I've processed your request and updated your focus settings!", 'Griff');
+							} else {
+								addChatMessage(chatContainer, cleanedResponse, 'Griff');
+							}
 						} else {
-							addChatMessage(chatContainer, 'Sorry, I had trouble thinking...', 'griffin');
+							addChatMessage(chatContainer, 'Sorry, I had trouble thinking...', 'Griff');
 						}
 						chatInput.disabled = false;
 						chatSend.disabled = false;
@@ -486,7 +513,7 @@
 		const messagesDiv = chatContainer.querySelector('#chat-messages');
 
 		const messageEl = document.createElement('div');
-		messageEl.className = 'chat-message griffin loading-message';
+		messageEl.className = 'chat-message Griff loading-message';
 
 		const loadingEl = document.createElement('div');
 		loadingEl.className = 'message-loading';
@@ -522,26 +549,22 @@
 
 			// Add welcome message if first time
 			if (messagesDiv.children.length === 0) {
-				addChatMessage(
-					chatContainer,
-					`Hi! I'm Griffin. I'm using ${status.currentModel} today. What would you like to chat about?`,
-					'griffin'
-				);
+				addChatMessage(chatContainer, `Hi! I'm Griff. I'm using ${status.currentModel} today. What would you like to chat about?`, 'Griff');
 			}
 		}
 	}
 
 	function closeChat(chatContainer) {
-		if (chatContainer && chatContainer.__messageHandler) {
+		if (chatContainer?.__messageHandler) {
 			window.removeEventListener('message', chatContainer.__messageHandler);
 		}
 
 		if (chatContainer) {
 			chatContainer.style.animation = 'chat-slide-up 0.3s ease-out reverse';
 			setTimeout(() => {
-				if (chatContainer && chatContainer.parentNode) {
+				if (chatContainer?.parentNode) {
 					chatContainer.parentNode.removeChild(chatContainer);
-					window.griffinChatOpen = false;
+					window.GriffChatOpen = false;
 				}
 			}, 300);
 		}
@@ -612,7 +635,7 @@
 				display: flex; gap: 8px; animation: message-fade-in 0.3s ease-out;
 			}
 			.chat-message.user { justify-content: flex-end; }
-			.chat-message.griffin { justify-content: flex-start; }
+			.chat-message.Griff { justify-content: flex-start; }
 			.message-content {
 				max-width: 70%; padding: 10px 12px; border-radius: 8px;
 				font-size: 13px; line-height: 1.4; word-wrap: break-word;
@@ -620,7 +643,7 @@
 			.message-content.user {
 				background: #667eea; color: #fff; border-radius: 12px 4px 12px 12px;
 			}
-			.message-content.griffin {
+			.message-content.Griff {
 				background: #e8e8e8; color: #333; border-radius: 4px 12px 12px 12px;
 			}
 			.message-loading {

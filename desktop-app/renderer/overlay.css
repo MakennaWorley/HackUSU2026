@@ -9,7 +9,7 @@ body {
 }
 
 /* ── Container ── */
-#griffin-container {
+#Griff-container {
 	position: absolute;
 	bottom: 10px;
 	right: 10px;
@@ -21,8 +21,8 @@ body {
 	transition: transform 0.3s ease;
 }
 
-/* ── Griffin image ── */
-#griffin-img {
+/* ── Griff image ── */
+#Griff-img {
 	width: 100px;
 	height: 100px;
 	object-fit: contain;
@@ -31,11 +31,11 @@ body {
 }
 
 /* ── Idle float animation ── */
-#griffin-container:not(.griffin-angry) #griffin-img {
-	animation: griffin-float 3s ease-in-out infinite;
+#Griff-container:not(.Griff-angry) #Griff-img {
+	animation: Griff-float 3s ease-in-out infinite;
 }
 
-@keyframes griffin-float {
+@keyframes Griff-float {
 
 	0%,
 	100% {
@@ -48,7 +48,7 @@ body {
 }
 
 /* ── Speech bubble ── */
-#griffin-speech-bubble {
+#Griff-speech-bubble {
 	background: #fff;
 	color: #211551;
 	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -61,10 +61,10 @@ body {
 	position: relative;
 	margin-bottom: 8px;
 	box-shadow: 0 2px 10px #101820;
-	animation: griffin-bubble-in 0.3s ease;
+	animation: Griff-bubble-in 0.3s ease;
 }
 
-#griffin-speech-bubble::after {
+#Griff-speech-bubble::after {
 	content: '';
 	position: absolute;
 	bottom: -8px;
@@ -77,7 +77,7 @@ body {
 	border-top: 8px solid #FFFFFF;
 }
 
-@keyframes griffin-bubble-in {
+@keyframes Griff-bubble-in {
 	from {
 		opacity: 0;
 		transform: scale(0.8) translateY(10px);
@@ -90,12 +90,12 @@ body {
 }
 
 /* ── Angry shake ── */
-.griffin-angry #griffin-img {
-	animation: griffin-shake 0.4s ease-in-out infinite;
+.Griff-angry #Griff-img {
+	animation: Griff-shake 0.4s ease-in-out infinite;
 	filter: hue-rotate(-30deg) saturate(2.5) brightness(0.85) contrast(1.2);
 }
 
-@keyframes griffin-shake {
+@keyframes Griff-shake {
 
 	0%,
 	100% {
@@ -112,12 +112,12 @@ body {
 }
 
 /* ── Rage mode ── */
-.griffin-rage #griffin-img {
-	animation: griffin-rage-shake 0.15s ease-in-out infinite;
+.Griff-rage #Griff-img {
+	animation: Griff-rage-shake 0.15s ease-in-out infinite;
 	filter: hue-rotate(-30deg) saturate(3) brightness(0.75) contrast(1.4) drop-shadow(0 0 8px red);
 }
 
-@keyframes griffin-rage-shake {
+@keyframes Griff-rage-shake {
 
 	0%,
 	100% {
@@ -133,11 +133,11 @@ body {
 	}
 }
 
-.griffin-rage {
+.Griff-rage {
 	filter: drop-shadow(0 0 16px red) !important;
 }
 
 /* ── Hidden utility ── */
-.griffin-hidden {
+.Griff-hidden {
 	display: none !important;
 }
